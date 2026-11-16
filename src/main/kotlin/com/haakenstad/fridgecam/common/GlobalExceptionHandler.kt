@@ -3,6 +3,8 @@ package com.haakenstad.fridgecam.common
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.multipart.MaxUploadSizeExceededException
@@ -34,6 +36,19 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MultipartException::class)
     fun multipart(e: MultipartException): ResponseEntity<ApiFeil> =
         svar(HttpStatus.BAD_REQUEST, "bilde_mangler", "Forventet en multipart-forespørsel med et bilde.")
+
+    /** `@Valid` på en request-body feilet; meldingen er fra første ugyldige felt. */
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun ugyldig(e: MethodArgumentNotValidException): ResponseEntity<ApiFeil> =
+        svar(
+            HttpStatus.BAD_REQUEST,
+            "ugyldig_foresporsel",
+            e.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Ugyldige data.",
+        )
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun uleselig(e: HttpMessageNotReadableException): ResponseEntity<ApiFeil> =
+        svar(HttpStatus.BAD_REQUEST, "ugyldig_foresporsel", "Forespørselen kunne ikke leses.")
 
     @ExceptionHandler(Exception::class)
     fun uventet(e: Exception): ResponseEntity<ApiFeil> {

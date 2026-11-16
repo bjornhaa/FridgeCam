@@ -7,6 +7,9 @@ spring:
     import: optional:file:.env[.properties]
 
 fridgecam:
+  jwt:
+    # Bare for lokal utvikling. Prod bruker JWT_SECRET.
+    hemmelighet: ${JWT_SECRET:lokal-utviklingshemmelighet-som-aldri-brukes-i-prod}
   local-db:
     # Låst port så en DB-tilkobling i IntelliJ overlever omstart.
     # 55433 for å ikke kollidere med talik-ai (55432). 0 = tilfeldig ledig port.
