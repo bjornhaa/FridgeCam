@@ -38,13 +38,13 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
 ## Fase 0 – Oppsett
 - [x] Opprette public GitHub-repo
-- [ ] Spring Boot-skjelett i Maven-prosjektet (Kotlin, Java 25, actuator health)
-- [ ] Postgres: Zonky embedded lokalt (`local`-profil), Flyway, første migrering
-- [ ] Vite/React-skall som serveres fra backend (`with-frontend`-profil)
-- [ ] GitHub Actions: bygg og test på push/PR
+- [x] Spring Boot-skjelett i Maven-prosjektet (Kotlin, Java 25, actuator health)
+- [x] Postgres: Zonky embedded lokalt (`local`-profil), Flyway, første migrering
+- [x] Vite/React-skall som serveres fra backend (`with-frontend`-profil)
+- [x] GitHub Actions: bygg og test på push/PR
 
 ## Fase 1 – Bilde → vareliste
-- [ ] PWA: kameraknapp (`<input capture="environment">`), forhåndsvisning
+- [x] PWA: kameraknapp (`<input capture="environment">`), forhåndsvisning
 - [ ] Krympe/komprimere bilde i nettleseren før opplasting
 - [ ] Backend: `POST /api/analyze` som sender bildet til AI og returnerer JSON
 - [ ] `VisionProvider`-grensesnitt slik at AI-leverandør kan byttes (valgt via `AI_PROVIDER`)

@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Én kjøring per gren om gangen; en ny push avbryter den forrige på samme gren.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Java 25 + Maven-cache
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          # Dekker også Zonky sine Postgres-binærer, som ligger som jar-er i ~/.m2.
+          cache: maven
+
+      # Node og npm installeres av frontend-maven-plugin; her caches bare
+      # npm sin nedlastingsmappe.
+      - name: npm-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
+
+      - name: Bygg jar med frontend og kjør tester
+        run: mvn -B -Pwith-frontend verify
+
+  # Deploy til Fly.io kommer i fase 4.
