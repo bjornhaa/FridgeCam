@@ -7,9 +7,19 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      # Bildet krympes i nettleseren til noen hundre kB; 10 MB gir god margin.
+      max-file-size: 10MB
+      max-request-size: 11MB
 
 server:
   port: 8080
+  tomcat:
+    # Når et bilde er for stort, leser Tomcat resten av forespørselen før den
+    # svarer. Er den over denne grensen, lukkes forbindelsen i stedet, og
+    # klienten får nettverksfeil i stedet for feilkoden bilde_for_stort.
+    max-swallow-size: 20MB
   forward-headers-strategy: framework
 
 management:
@@ -24,3 +34,9 @@ management:
 logging:
   level:
     com.haakenstad.fridgecam: INFO
+
+fridgecam:
+  ai:
+    # fake | anthropic | gemini. Må settes i prod; appen starter ikke uten.
+    provider: ${AI_PROVIDER:}
+    model: ${AI_MODEL:}

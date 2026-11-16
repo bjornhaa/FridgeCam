@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { krympBilde, type KrympetBilde } from './bilde/krympBilde.ts'
+import { analyserBilde, AnalyseFeil, type AnalyseSvar } from './api/analyse.ts'
+import { VareListe } from './VareListe.tsx'
 
 /**
  * Kameraflyten: ta bilde, krymp det (#6), se forhåndsvisning, ta nytt.
@@ -16,6 +18,8 @@ export default function App() {
   const [visningsUrl, setVisningsUrl] = useState<string | null>(null)
   const [behandler, setBehandler] = useState(false)
   const [feil, setFeil] = useState<string | null>(null)
+  const [analyserer, setAnalyserer] = useState(false)
+  const [analyse, setAnalyse] = useState<AnalyseSvar | null>(null)
   const kameraInput = useRef<HTMLInputElement>(null)
   const galleriInput = useRef<HTMLInputElement>(null)
 
@@ -38,6 +42,7 @@ export default function App() {
     if (!fil) return
 
     setFeil(null)
+    setAnalyse(null)
     setBehandler(true)
     try {
       setBilde(await krympBilde(fil))
@@ -45,6 +50,19 @@ export default function App() {
       setFeil(err instanceof Error ? err.message : 'Noe gikk galt med bildet.')
     } finally {
       setBehandler(false)
+    }
+  }
+
+  async function finnVarer() {
+    if (!bilde) return
+    setFeil(null)
+    setAnalyserer(true)
+    try {
+      setAnalyse(await analyserBilde(bilde.fil))
+    } catch (err) {
+      setFeil(err instanceof AnalyseFeil ? err.message : 'Noe gikk galt. Prøv igjen.')
+    } finally {
+      setAnalyserer(false)
     }
   }
 
@@ -98,21 +116,27 @@ export default function App() {
               </figcaption>
             </figure>
 
-            <button
-              type="button"
-              disabled
-              className="rounded-xl bg-accent px-5 py-4 text-lg font-medium text-white disabled:opacity-50"
-            >
-              Finn varer
-            </button>
-            <p className="-mt-2 text-center text-sm text-ink-soft dark:text-slate-400">
-              Analyse med AI kommer i neste steg.
-            </p>
+            {analyse ? (
+              <VareListe varer={analyse.varer} />
+            ) : (
+              <button
+                type="button"
+                onClick={finnVarer}
+                disabled={analyserer}
+                className="flex items-center justify-center gap-3 rounded-xl bg-accent px-5 py-4 text-lg font-medium text-white active:bg-accent-hover disabled:opacity-70"
+              >
+                {analyserer && (
+                  <span className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                )}
+                {analyserer ? 'Ser etter varer …' : 'Finn varer'}
+              </button>
+            )}
 
             <button
               type="button"
               onClick={() => kameraInput.current?.click()}
-              className="rounded-xl border border-accent px-5 py-3 font-medium text-accent active:bg-frost-deep dark:active:bg-slate-800"
+              disabled={analyserer}
+              className="rounded-xl border border-accent disabled:opacity-50 px-5 py-3 font-medium text-accent active:bg-frost-deep dark:active:bg-slate-800"
             >
               Ta nytt bilde
             </button>
