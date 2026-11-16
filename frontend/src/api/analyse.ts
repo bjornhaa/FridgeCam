@@ -1,4 +1,5 @@
 /** Klient for `POST /api/analyze` (#7). */
+import { apiKall } from './klient.ts'
 
 export type Sikkerhet = 'høy' | 'middels' | 'lav'
 
@@ -22,16 +23,6 @@ export type AnalyseSvar = {
   leverandor: string
 }
 
-/** Feil med en melding som kan vises direkte til brukeren. */
-export class AnalyseFeil extends Error {
-  readonly code: string
-
-  constructor(code: string, message: string) {
-    super(message)
-    this.code = code
-  }
-}
-
 const MELDINGER: Record<string, string> = {
   bilde_for_stort: 'Bildet er for stort. Prøv å ta det på nytt.',
   ugyldig_bildeformat: 'Bildeformatet støttes ikke. Prøv å ta bildet på nytt.',
@@ -45,21 +36,7 @@ const MELDINGER: Record<string, string> = {
 export async function analyserBilde(bilde: File, signal?: AbortSignal): Promise<AnalyseSvar> {
   const skjema = new FormData()
   skjema.append('bilde', bilde)
-
-  let respons: Response
-  try {
-    respons = await fetch('/api/analyze', { method: 'POST', body: skjema, signal })
-  } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') throw err
-    throw new AnalyseFeil('nettverk', 'Fikk ikke kontakt med serveren. Sjekk nettet og prøv igjen.')
-  }
-
-  if (!respons.ok) {
-    const feil = await respons.json().catch(() => null) as { code?: string; message?: string } | null
-    const code = feil?.code ?? `http_${respons.status}`
-    throw new AnalyseFeil(code, MELDINGER[code] ?? feil?.message ?? 'Noe gikk galt. Prøv igjen.')
-  }
-  return normaliser(await respons.json())
+  return normaliser(await apiKall('/api/analyze', { method: 'POST', body: skjema, signal }, MELDINGER))
 }
 
 /**
