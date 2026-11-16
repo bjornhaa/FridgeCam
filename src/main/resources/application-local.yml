@@ -1,0 +1,12 @@
+# Profil 'local' – aktiveres som standard av spring-boot-maven-plugin (mvn spring-boot:run).
+# DataSource leveres av LocalDataSourceConfig (Zonky embedded Postgres, flyktig).
+fridgecam:
+  local-db:
+    # Låst port så en DB-tilkobling i IntelliJ overlever omstart.
+    # 55433 for å ikke kollidere med talik-ai (55432). 0 = tilfeldig ledig port.
+    port: ${FRIDGECAM_LOCAL_DB_PORT:55433}
+
+logging:
+  level:
+    io.zonky.test.db.postgres: INFO
+    org.flywaydb.core: INFO

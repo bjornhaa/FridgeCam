@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: fridgecam
+  # Datasource settes i prod via miljøvariablene SPRING_DATASOURCE_URL,
+  # SPRING_DATASOURCE_USERNAME og SPRING_DATASOURCE_PASSWORD (Fly secrets).
+  # Lokalt leverer LocalDataSourceConfig en innebygd Postgres (local-profil).
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    com.haakenstad.fridgecam: INFO
