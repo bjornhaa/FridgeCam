@@ -12,10 +12,10 @@ Planen tas steg for steg. Hver fase blir til GitHub-issues etter hvert som den b
 
 ## Stack (samme oppsett som talik-ai)
 
-- **Backend:** Kotlin + Spring Boot 3 (Java 21), Spring JDBC med `NamedParameterJdbcTemplate` (ikke JPA)
+- **Backend:** Kotlin + Spring Boot 4 (Java 25), Spring JDBC med `NamedParameterJdbcTemplate` (ikke JPA)
 - **Database:** PostgreSQL fra start, Flyway-migreringer
   - Lokalt og i tester: Zonky embedded Postgres (ingen Docker nødvendig)
-  - Prod: Fly Postgres, koblet til via `SPRING_DATASOURCE_*`-secrets
+  - Prod: Fly Postgres (samme hovedversjon som lokalt, Postgres 18), koblet til via `SPRING_DATASOURCE_*`-secrets
   - Ett migreringstre (`db/migration/`) – vi har ingen prod-historikk å konsolidere
 - **Auth:** Stateless JWT (som talik-ai)
 - **Frontend:** Vite + React + TypeScript + Tailwind, PWA. Bygges inn i jar-en via `with-frontend`-profil
@@ -38,7 +38,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
 ## Fase 0 – Oppsett
 - [x] Opprette public GitHub-repo
-- [ ] Spring Boot-skjelett i Maven-prosjektet (Kotlin, Java 21, actuator health)
+- [ ] Spring Boot-skjelett i Maven-prosjektet (Kotlin, Java 25, actuator health)
 - [ ] Postgres: Zonky embedded lokalt (`local`-profil), Flyway, første migrering
 - [ ] Vite/React-skall som serveres fra backend (`with-frontend`-profil)
 - [ ] GitHub Actions: bygg og test på push/PR
