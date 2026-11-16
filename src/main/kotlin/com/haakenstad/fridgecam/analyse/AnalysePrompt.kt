@@ -33,9 +33,17 @@ object AnalysePrompt {
         - Sikkerhet:
           - «høy»: varen er tydelig og du er sikker på hva den er.
           - «middels»: du ser varen, men navn eller antall er usikkert.
-          - «lav»: varen er delvis skjult eller utydelig.
-        - Ikke gjett på ting du ikke ser. Ugjennomsiktige bokser og matbokser uten synlig innhold
-          tas med som «matboks» med lav sikkerhet.
+          - «lav»: varen er delvis skjult eller utydelig, eller navnet er et gjett.
+        - Bruk alt du ser for å avgjøre hva varen er: tekst og merkenavn på etiketten, og
+          emballasjens form, farge og utseende. Står det f.eks. «Rømme» eller «Kokosmelk» på pakken,
+          er det det varen er; teksten veier tyngst når den er lesbar. Merkenavn som brukes som
+          varenavn, f.eks. «Biola» eller «Kesam», kan brukes som navn.
+        - Bilder og illustrasjoner på emballasjen viser ofte serveringsforslag, ikke innholdet.
+          En boks med bilde av en pizza er ikke en pizza; bestem varen ut fra tekst og emballasje.
+        - Gi alltid et konkret varenavn. Er du usikker, gi ditt beste gjett ut fra form, farge og
+          plassering, og sett sikkerhet «lav». Brukeren retter heller et gjett enn å skrive navnet selv.
+          Bruk generelle ord som «beger», «pakke» eller «flaske» bare når du ikke har noe grunnlag for et gjett.
+        - Ugjennomsiktige bokser og matbokser uten synlig innhold tas med som «matboks» med lav sikkerhet.
         - Ikke ta med selve kjøleskapet, hyller, skuffer eller emballasje uten innhold.
         - Ser du ingen matvarer, returner en tom liste.
 
