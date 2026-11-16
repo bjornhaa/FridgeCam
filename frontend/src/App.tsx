@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { krympBilde, type KrympetBilde } from './bilde/krympBilde.ts'
 import { analyserBilde, AnalyseFeil, type AnalyseSvar } from './api/analyse.ts'
 import { VareListe } from './VareListe.tsx'
+import { boksStil } from './bilde/boks.ts'
 
 /**
  * Kameraflyten: ta bilde, krymp det (#6), se forhåndsvisning, ta nytt.
@@ -20,6 +21,9 @@ export default function App() {
   const [feil, setFeil] = useState<string | null>(null)
   const [analyserer, setAnalyserer] = useState(false)
   const [analyse, setAnalyse] = useState<AnalyseSvar | null>(null)
+  const [valgtIndeks, setValgtIndeks] = useState<number | null>(null)
+  const figur = useRef<HTMLElement>(null)
+  const valgtVare = valgtIndeks !== null ? analyse?.varer[valgtIndeks] ?? null : null
   const kameraInput = useRef<HTMLInputElement>(null)
   const galleriInput = useRef<HTMLInputElement>(null)
 
@@ -43,6 +47,7 @@ export default function App() {
 
     setFeil(null)
     setAnalyse(null)
+    setValgtIndeks(null)
     setBehandler(true)
     try {
       setBilde(await krympBilde(fil))
@@ -51,6 +56,12 @@ export default function App() {
     } finally {
       setBehandler(false)
     }
+  }
+
+  function velgVare(indeks: number | null) {
+    setValgtIndeks(indeks)
+    // Bildet ligger over listen; scroll det i syne så boksen synes.
+    if (indeks !== null) figur.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   async function finnVarer() {
@@ -104,20 +115,46 @@ export default function App() {
           </div>
         ) : visningsUrl && bilde ? (
           <>
-            <figure className="overflow-hidden rounded-2xl bg-frost-deep shadow-sm dark:bg-slate-800">
-              <img
-                src={visningsUrl}
-                alt="Bilde av kjøleskapet"
-                className="max-h-[60dvh] w-full object-contain"
-              />
+            <figure
+              ref={figur}
+              className="scroll-mt-4 overflow-hidden rounded-2xl bg-frost-deep shadow-sm dark:bg-slate-800"
+            >
+              {/* Beholderen er nøyaktig like stor som bildet, så boksene (i prosent) treffer. */}
+              <div className="relative mx-auto w-fit">
+                <img
+                  src={visningsUrl}
+                  alt="Bilde av kjøleskapet"
+                  className="block max-h-[60dvh] max-w-full"
+                />
+                {valgtVare?.bokser.map((boks, i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute rounded-md border-[3px] border-amber-400 shadow-[0_0_0_2px_rgba(0,0,0,0.55)]"
+                    style={boksStil(boks)}
+                  >
+                    {i === 0 && (
+                      // Ligger boksen helt øverst, legges lappen inni boksen så den ikke kuttes.
+                      <span
+                        className={`absolute left-0 rounded bg-amber-400 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-black first-letter:uppercase ${
+                          boks.y1 < 60 ? 'top-0' : '-top-0.5 -translate-y-full'
+                        }`}
+                      >
+                        {valgtVare.navn}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
               <figcaption className="px-4 py-2 text-sm text-ink-soft dark:text-slate-400">
-                {formaterStorrelse(bilde.originalStorrelse)} → {formaterStorrelse(bilde.fil.size)} ·{' '}
-                {bilde.bredde} × {bilde.hoyde} px
+                {valgtVare && valgtVare.bokser.length === 0
+                  ? `AI-en oppga ikke hvor «${valgtVare.navn}» er i bildet.`
+                  : `${formaterStorrelse(bilde.originalStorrelse)} → ${formaterStorrelse(bilde.fil.size)} · ${bilde.bredde} × ${bilde.hoyde} px`}
               </figcaption>
             </figure>
 
             {analyse ? (
-              <VareListe varer={analyse.varer} />
+              <VareListe varer={analyse.varer} valgt={valgtIndeks} onVelg={velgVare} />
             ) : (
               <button
                 type="button"

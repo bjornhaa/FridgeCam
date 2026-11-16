@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.util.Locale
 
 data class AnalyseSvar(
     val varer: List<FunnetVare>,
@@ -42,11 +43,18 @@ class AnalyseController(
             )
 
         val start = System.nanoTime()
-        val varer = visionProvider.analyser(data, mimeType)
+        val resultat = visionProvider.analyser(data, mimeType)
         log.info(
-            "Analyse: {} kB {}, {} varer fra {} på {} ms",
-            data.size / 1024, mimeType, varer.size, visionProvider.navn, (System.nanoTime() - start) / 1_000_000,
+            "Analyse: {} kB {}, {} varer fra {} på {} ms{}",
+            data.size / 1024, mimeType, resultat.varer.size, visionProvider.navn,
+            (System.nanoTime() - start) / 1_000_000, beskriv(resultat.forbruk),
         )
-        return AnalyseSvar(varer, visionProvider.navn)
+        return AnalyseSvar(resultat.varer, visionProvider.navn)
+    }
+
+    private fun beskriv(forbruk: Tokenforbruk?): String {
+        if (forbruk == null) return ""
+        val kostnad = forbruk.kostnadUsd?.let { " ≈ $%.4f".format(Locale.ROOT, it) } ?: ""
+        return " (${forbruk.modell}: ${forbruk.inn} inn / ${forbruk.ut} ut tokens$kostnad)"
     }
 }

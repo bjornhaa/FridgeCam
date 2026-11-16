@@ -2,10 +2,19 @@
 
 export type Sikkerhet = 'høy' | 'middels' | 'lav'
 
+/** Rektangel i bildet, normaliserte koordinater 0–1000 med origo øverst til venstre. */
+export type Boks = {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+}
+
 export type FunnetVare = {
   navn: string
   antall: number
   sikkerhet: Sikkerhet
+  bokser: Boks[]
 }
 
 export type AnalyseSvar = {
@@ -50,5 +59,22 @@ export async function analyserBilde(bilde: File, signal?: AbortSignal): Promise<
     const code = feil?.code ?? `http_${respons.status}`
     throw new AnalyseFeil(code, MELDINGER[code] ?? feil?.message ?? 'Noe gikk galt. Prøv igjen.')
   }
-  return respons.json() as Promise<AnalyseSvar>
+  return normaliser(await respons.json())
+}
+
+/**
+ * Sørger for at svaret har formen appen forventer, også når et felt mangler,
+ * f.eks. `bokser` fra en backend eller leverandør som ikke oppgir plassering.
+ * Uten dette krasjer visningen på `undefined.map` og siden blir hvit.
+ */
+function normaliser(data: unknown): AnalyseSvar {
+  const svar = (data ?? {}) as Partial<AnalyseSvar>
+  const varer = Array.isArray(svar.varer) ? svar.varer : []
+  return {
+    leverandor: typeof svar.leverandor === 'string' ? svar.leverandor : 'ukjent',
+    varer: varer.map((v) => ({
+      ...v,
+      bokser: Array.isArray(v.bokser) ? v.bokser : [],
+    })),
+  }
 }
