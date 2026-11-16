@@ -123,4 +123,30 @@ class AnalysePromptTest {
 
         assertThat(vare.bokser).hasSize(AnalysePrompt.MAKS_BOKSER)
     }
+
+    @Test
+    fun `tolker bokser i box_2d-format`() {
+        val bokser = AnalysePrompt.tolk(
+            """{"varer":[{"navn":"egg","antall":6,"sikkerhet":"høy","bokser":[[300,320,420,620],[1,2,3]]}]}""",
+            mapper,
+        ).single().bokser
+
+        // [ymin, xmin, ymax, xmax]; boksen med tre tall droppes
+        assertThat(bokser).containsExactly(Boks(320, 300, 620, 420))
+    }
+
+    @Test
+    fun `boksformatet styrer prompt og skjema`() {
+        assertThat(AnalysePrompt.system(Boksformat.BOX_2D)).contains("box_2d")
+        assertThat(AnalysePrompt.system(Boksformat.HJORNER)).contains("x1,y1").doesNotContain("box_2d")
+
+        @Suppress("UNCHECKED_CAST")
+        fun boksSkjema(format: Boksformat): Map<String, Any> {
+            val varer = (AnalysePrompt.skjema(format)["properties"] as Map<String, Any>)["varer"] as Map<String, Any>
+            val vare = (varer["items"] as Map<String, Any>)["properties"] as Map<String, Any>
+            return (vare["bokser"] as Map<String, Any>)["items"] as Map<String, Any>
+        }
+        assertThat(boksSkjema(Boksformat.BOX_2D)["type"]).isEqualTo("array")
+        assertThat(boksSkjema(Boksformat.HJORNER)["type"]).isEqualTo("object")
+    }
 }

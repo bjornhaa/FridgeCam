@@ -36,11 +36,12 @@ class AnthropicVisionProvider(
     private val client: AnthropicClient,
     private val modell: String,
     private val mapper: JsonMapper,
+    private val innsats: Innsats = Innsats.MEDIUM,
 ) : VisionProvider, AutoCloseable {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override val navn = "anthropic/$modell"
+    override val navn = "anthropic/$modell (effort ${innsats.name.lowercase()})"
 
     private val skjema = BetaJsonOutputFormat.Schema.builder()
         .putAllAdditionalProperties(AnalysePrompt.SKJEMA.mapValues { JsonValue.from(it.value) })
@@ -87,8 +88,13 @@ class AnthropicVisionProvider(
             )
             .outputConfig(
                 BetaOutputConfig.builder()
-                    // Å liste varer i et bilde er en enkel oppgave; medium holder.
-                    .effort(BetaOutputConfig.Effort.MEDIUM)
+                    .effort(
+                        when (innsats) {
+                            Innsats.LOW -> BetaOutputConfig.Effort.LOW
+                            Innsats.MEDIUM -> BetaOutputConfig.Effort.MEDIUM
+                            Innsats.HIGH -> BetaOutputConfig.Effort.HIGH
+                        },
+                    )
                     .format(BetaJsonOutputFormat.builder().schema(skjema).build())
                     .build(),
             )

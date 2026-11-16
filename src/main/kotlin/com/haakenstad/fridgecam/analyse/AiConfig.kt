@@ -11,6 +11,13 @@ import java.time.Duration
 enum class AiLeverandor { FAKE, ANTHROPIC, GEMINI }
 
 /**
+ * Hvor mye modellen skal tenke før den svarer (`AI_EFFORT`). Mer tenking kan gi
+ * bedre svar, men tar lengre tid og koster mer, siden tenking faktureres som output.
+ * Blir `effort` hos Anthropic og `thinking_level` hos Gemini.
+ */
+enum class Innsats { LOW, MEDIUM, HIGH }
+
+/**
  * `fridgecam.ai.*`, satt fra miljøvariablene `AI_PROVIDER` og `AI_MODEL`.
  */
 @ConfigurationProperties("fridgecam.ai")
@@ -19,6 +26,8 @@ data class AiProperties(
     val model: String? = null,
     val fakeForsinkelse: Duration = Duration.ZERO,
     val anthropicApiKey: String? = null,
+    val geminiApiKey: String? = null,
+    val effort: Innsats = Innsats.MEDIUM,
 )
 
 @Configuration
@@ -40,7 +49,7 @@ class AiConfig {
         val provider = when (leverandor) {
             AiLeverandor.FAKE -> FakeVisionProvider(props.fakeForsinkelse)
             AiLeverandor.ANTHROPIC -> anthropic(props, mapper)
-            AiLeverandor.GEMINI -> ikkeImplementert(leverandor, "#10")
+            AiLeverandor.GEMINI -> gemini(props, mapper)
         }
         log.info("AI-leverandør: {}", provider.navn)
         return provider
@@ -55,11 +64,13 @@ class AiConfig {
             .timeout(Duration.ofSeconds(90))
             .build()
         val modell = props.model?.takeIf { it.isNotBlank() } ?: AnthropicVisionProvider.STANDARD_MODELL
-        return AnthropicVisionProvider(client, modell, mapper)
+        return AnthropicVisionProvider(client, modell, mapper, props.effort)
     }
 
-    private fun ikkeImplementert(leverandor: AiLeverandor, issue: String): Nothing =
-        throw IllegalStateException(
-            "AI_PROVIDER=${leverandor.name.lowercase()} er ikke implementert ennå ($issue). Bruk fake inntil videre.",
-        )
+    private fun gemini(props: AiProperties, mapper: JsonMapper): GeminiVisionProvider {
+        val nokkel = props.geminiApiKey?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("AI_PROVIDER=gemini krever GEMINI_API_KEY.")
+        val modell = props.model?.takeIf { it.isNotBlank() } ?: GeminiVisionProvider.STANDARD_MODELL
+        return GeminiVisionProvider(nokkel, modell, mapper, props.effort)
+    }
 }

@@ -39,13 +39,23 @@ class AiConfigTest {
             mapper,
         )
 
-        assertThat(provider.navn).isEqualTo("anthropic/claude-opus-5-5")
+        assertThat(provider.navn).isEqualTo("anthropic/claude-opus-5-5 (effort medium)")
         (provider as AutoCloseable).close()
     }
 
     @Test
-    fun `gemini gir tydelig melding om at den ikke er laget ennå`() {
+    fun `gemini uten API-nøkkel stopper oppstart`() {
         assertThatThrownBy { config.visionProvider(AiProperties(provider = AiLeverandor.GEMINI), mapper) }
-            .hasMessageContaining("#10")
+            .hasMessageContaining("GEMINI_API_KEY")
+    }
+
+    @Test
+    fun `gemini bruker standardmodell når AI_MODEL er tom`() {
+        val provider = config.visionProvider(
+            AiProperties(provider = AiLeverandor.GEMINI, geminiApiKey = "test", model = " "),
+            mapper,
+        )
+
+        assertThat(provider.navn).isEqualTo("gemini/gemini-4-hydrogen (thinking medium)")
     }
 }

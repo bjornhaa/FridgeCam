@@ -48,7 +48,7 @@ class AnthropicVisionProviderTest {
         server.stop(0)
     }
 
-    private fun provider(modell: String = "claude-opus-5-5") = AnthropicVisionProvider(
+    private fun provider(modell: String = "claude-opus-5-5", innsats: Innsats = Innsats.MEDIUM) = AnthropicVisionProvider(
         AnthropicOkHttpClient.builder()
             .apiKey("sk-ant-test")
             .baseUrl("http://127.0.0.1:${server.address.port}")
@@ -56,6 +56,7 @@ class AnthropicVisionProviderTest {
             .build(),
         modell,
         mapper,
+        innsats,
     )
 
     private fun melding(tekst: String, stopReason: String = "end_turn") = """
@@ -104,6 +105,15 @@ class AnthropicVisionProviderTest {
 
         assertThat(forbruk.modell).isEqualTo("claude-ny-modell")
         assertThat(forbruk.kostnadUsd).isNull()
+    }
+
+    @Test
+    fun `AI_EFFORT styrer effort`() {
+        svar = melding("""{"varer":[]}""")
+
+        provider(innsats = Innsats.LOW).analyser(bilde, "image/jpeg")
+
+        assertThat(mottattBody!!["output_config"]["effort"].asString()).isEqualTo("low")
     }
 
     @Test
