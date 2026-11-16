@@ -30,6 +30,34 @@ Koble til fra IntelliJ: `jdbc:postgresql://127.0.0.1:55433/postgres`, bruker
 Uten profil (prod) leses databasen fra `SPRING_DATASOURCE_URL`,
 `SPRING_DATASOURCE_USERNAME` og `SPRING_DATASOURCE_PASSWORD`.
 
+### Konfigurasjon og API-nøkler
+
+Appen styres med miljøvariabler:
+
+| Variabel | Verdier | Standard |
+|---|---|---|
+| `AI_PROVIDER` | `fake`, `anthropic`, `gemini` | `fake` lokalt; må settes i prod |
+| `AI_MODEL` | f.eks. `claude-sonnet-5-5` | `claude-opus-5-5` / `gemini-4-hydrogen` |
+| `AI_EFFORT` | `low`, `medium`, `high` | `medium` |
+| `ANTHROPIC_API_KEY` | fra [Claude Console](https://platform.claude.com) → Settings → API Keys | – |
+| `GEMINI_API_KEY` | fra [Google AI Studio](https://aistudio.google.com) → Get API key | – |
+
+Appen stopper ved oppstart med en tydelig melding hvis valgt leverandør mangler nøkkel.
+
+**Lokalt:** kopier `.env.example` til `.env` og fyll inn. `.env` leses automatisk
+med `local`-profilen og er lagt i `.gitignore`. Alternativt kan variablene settes i
+run-konfigurasjonen i IntelliJ (de vinner over `.env`). Kjøres appen fra IntelliJ, må
+`local`-profilen være aktiv: *Active profiles: `local`* eller `SPRING_PROFILES_ACTIVE=local`.
+
+**Produksjon (Fly.io):** `.env` brukes ikke. Sett verdiene som secrets:
+
+```sh
+fly secrets set AI_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Nøklene skal aldri i frontend, i git eller i logger. Backend logger bare HTTP-status
+ved avvist nøkkel, og actuator eksponerer bare `health` og `info`.
+
 ### Frontend
 
 Frontenden ligger i `frontend/` (Vite + React + TypeScript + Tailwind).

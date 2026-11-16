@@ -50,9 +50,9 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [x] `VisionProvider`-grensesnitt slik at AI-leverandør kan byttes (valgt via `AI_PROVIDER`)
 - [x] Implementasjon: Anthropic (offisiell Java SDK, modell konfigurerbar via `AI_MODEL`)
 - [x] Implementasjon: Google Gemini (gratisnivå, for testing/utvikling)
-- [ ] Felles prompt + JSON-skjema for strukturert svar (navn, antall, sikkerhet), validert i backend
+- [x] Felles prompt + JSON-skjema for strukturert svar (navn, antall, sikkerhet), validert i backend
 - [x] Vise resultatlisten i appen
-- [ ] API-nøkler via miljøvariabler / Fly secrets, aldri i frontend
+- [x] API-nøkler via miljøvariabler / Fly secrets, aldri i frontend
 
 ## Fase 2 – Brukere, husstand og lagring
 - [ ] Registrering/innlogging med JWT
