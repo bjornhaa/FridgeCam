@@ -56,3 +56,31 @@ cloudflared tunnel --url http://localhost:5173
 
 Åpne `https://….trycloudflare.com`-adressen cloudflared skriver ut, på
 telefonen. Backend på :8080 trengs bare for sider som kaller API-et.
+
+### Sammenligne AI-oppsett
+
+`SammenligningTest` kjører testbilder gjennom flere AI-oppsett og teller treff,
+bomskudd og manglende varer mot en fasit. Bilder, fasit, råsvar og rapporter
+ligger i `testbilder/`, som holdes utenfor git (repoet er offentlig).
+
+```
+testbilder/
+  kjoleskap-1.jpg             # krympet slik appen sender det (1500 px, JPEG)
+  kjoleskap-1.fasit.json      # hva som faktisk er der, med alias
+  kjoringer-<tid>.json        # råsvar fra hver kjøring
+  rapport-<tid>.md            # resultat
+```
+
+Testen bruker ekte API-kall (Claude koster penger) og kjører derfor bare når
+`FRIDGECAM_SAMMENLIGNING=1` er satt:
+
+```sh
+FRIDGECAM_SAMMENLIGNING=1 ANTHROPIC_API_KEY=… GEMINI_API_KEY=… \
+  mvn test -Dtest=SammenligningTest -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+- `FRIDGECAM_KJORINGER`: kjøringer per oppsett (standard 5)
+- `FRIDGECAM_OPPSETT`: f.eks. `claude-opus-medium,claude-sonnet-medium`
+- `FRIDGECAM_REVURDER=testbilder/kjoringer-….json`: tell på nytt fra lagrede
+  råsvar uten API-kall, f.eks. etter at fasiten er rettet
+
