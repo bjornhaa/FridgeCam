@@ -45,7 +45,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
 ## Fase 1 – Bilde → vareliste
 - [x] PWA: kameraknapp (`<input capture="environment">`), forhåndsvisning
-- [ ] Krympe/komprimere bilde i nettleseren før opplasting
+- [x] Krympe/komprimere bilde i nettleseren før opplasting
 - [ ] Backend: `POST /api/analyze` som sender bildet til AI og returnerer JSON
 - [ ] `VisionProvider`-grensesnitt slik at AI-leverandør kan byttes (valgt via `AI_PROVIDER`)
 - [ ] Implementasjon: Anthropic (offisiell Java SDK, modell konfigurerbar via `AI_MODEL`)

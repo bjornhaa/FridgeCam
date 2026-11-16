@@ -28,6 +28,7 @@
         <node.version>v26.13.1</node.version>
         <npm.version>11.20.0</npm.version>
         <frontend.dir>${project.basedir}/frontend</frontend.dir>
+        <skipTests>false</skipTests>
     </properties>
 
     <dependencyManagement>
@@ -227,6 +228,18 @@
                                 </goals>
                                 <configuration>
                                     <arguments>run build</arguments>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>npm-test</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>npm</goal>
+                                </goals>
+                                <configuration>
+                                    <arguments>test</arguments>
+                                    <!-- Følger -DskipTests, som Dockerfile-bygget bruker. -->
+                                    <skip>${skipTests}</skip>
                                 </configuration>
                             </execution>
                         </executions>

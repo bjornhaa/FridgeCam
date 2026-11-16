@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { krympBilde, type KrympetBilde } from './bilde/krympBilde.ts'
 
 /**
- * Første versjon av kameraflyten (#5): ta bilde, se forhåndsvisning, ta nytt.
+ * Kameraflyten: ta bilde, krymp det (#6), se forhåndsvisning, ta nytt.
  *
  * Kameraet åpnes med en vanlig filvelger med `capture="environment"`. Det er
  * det mest robuste på tvers av iOS og Android, og gir telefonens eget
  * kamera-grensesnitt (fokus, blits, zoom) uten at vi må bygge det selv.
+ *
+ * Forhåndsvisningen viser det krympede bildet, altså det AI-en vil få se.
+ * Da synes det med en gang hvis orienteringen har blitt feil.
  */
 export default function App() {
-  const [bilde, setBilde] = useState<File | null>(null)
+  const [bilde, setBilde] = useState<KrympetBilde | null>(null)
   const [visningsUrl, setVisningsUrl] = useState<string | null>(null)
+  const [behandler, setBehandler] = useState(false)
+  const [feil, setFeil] = useState<string | null>(null)
   const kameraInput = useRef<HTMLInputElement>(null)
   const galleriInput = useRef<HTMLInputElement>(null)
 
@@ -20,16 +26,26 @@ export default function App() {
       setVisningsUrl(null)
       return
     }
-    const url = URL.createObjectURL(bilde)
+    const url = URL.createObjectURL(bilde.fil)
     setVisningsUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [bilde])
 
-  function velgBilde(e: ChangeEvent<HTMLInputElement>) {
+  async function velgBilde(e: ChangeEvent<HTMLInputElement>) {
     const fil = e.target.files?.[0]
     // Nullstill så samme fil kan velges på nytt.
     e.target.value = ''
-    if (fil) setBilde(fil)
+    if (!fil) return
+
+    setFeil(null)
+    setBehandler(true)
+    try {
+      setBilde(await krympBilde(fil))
+    } catch (err) {
+      setFeil(err instanceof Error ? err.message : 'Noe gikk galt med bildet.')
+    } finally {
+      setBehandler(false)
+    }
   }
 
   return (
@@ -58,7 +74,17 @@ export default function App() {
       />
 
       <main className="flex flex-1 flex-col gap-4">
-        {visningsUrl && bilde ? (
+        {feil && (
+          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-red-800 dark:bg-red-950 dark:text-red-200">
+            {feil}
+          </p>
+        )}
+        {behandler ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-ink-soft dark:text-slate-400">
+            <div className="size-10 animate-spin rounded-full border-4 border-slate-300 border-t-accent" />
+            <p>Gjør klar bildet …</p>
+          </div>
+        ) : visningsUrl && bilde ? (
           <>
             <figure className="overflow-hidden rounded-2xl bg-frost-deep shadow-sm dark:bg-slate-800">
               <img
@@ -67,7 +93,8 @@ export default function App() {
                 className="max-h-[60dvh] w-full object-contain"
               />
               <figcaption className="px-4 py-2 text-sm text-ink-soft dark:text-slate-400">
-                {formaterStorrelse(bilde.size)} · {bilde.type || 'ukjent format'}
+                {formaterStorrelse(bilde.originalStorrelse)} → {formaterStorrelse(bilde.fil.size)} ·{' '}
+                {bilde.bredde} × {bilde.hoyde} px
               </figcaption>
             </figure>
 
