@@ -39,6 +39,9 @@ fridgecam:
   ai:
     # fake | anthropic | gemini. Må settes i prod; appen starter ikke uten.
     provider: ${AI_PROVIDER:}
-    # Tom = leverandørens standardmodell (anthropic: claude-opus-5-5).
+    # Tom = leverandørens standardmodell (anthropic: claude-opus-5-5, gemini: gemini-4-hydrogen).
     model: ${AI_MODEL:}
     anthropic-api-key: ${ANTHROPIC_API_KEY:}
+    gemini-api-key: ${GEMINI_API_KEY:}
+    # low | medium | high: hvor mye modellen tenker. Lavere = raskere og billigere.
+    effort: ${AI_EFFORT:medium}

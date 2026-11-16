@@ -4,12 +4,25 @@ import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 
 /**
+ * Hvordan modellen oppgir bokser. Varelisten er lik for alle leverandører; bare
+ * boksene skiller seg, fordi Gemini er trent på sitt eget `box_2d`-format og
+ * treffer best med det.
+ */
+enum class Boksformat {
+    /** `{"x1":…, "y1":…, "x2":…, "y2":…}`: øvre venstre og nedre høyre hjørne. */
+    HJORNER,
+
+    /** `[ymin, xmin, ymax, xmax]`, Geminis `box_2d`-format. */
+    BOX_2D,
+}
+
+/**
  * Prompt, JSON-skjema og tolking av svaret, felles for alle AI-leverandører.
  * Da gir Anthropic og Gemini svar i samme form, og valideringen skjer ett sted.
  */
 object AnalysePrompt {
 
-    val SYSTEM = """
+    private val GRUNNREGLER = """
         Du ser på et bilde av innholdet i et kjøleskap og lister matvarene du ser.
 
         Regler:
@@ -29,15 +42,43 @@ object AnalysePrompt {
         Plassering («bokser»):
         - Oppgi hvor varen er i bildet med en boks per synlig eksemplar som stramt omslutter varen.
         - Står mange like varer samlet (f.eks. egg i en kartong), holder én boks rundt gruppen.
-        - Koordinatene er heltall fra 0 til 1000 relativt til bildets bredde og høyde,
-          med origo øverst til venstre: x1,y1 er øvre venstre hjørne og x2,y2 nedre høyre hjørne.
-          Midten av bildet er altså x=500, y=500, uavhengig av bildets størrelse og format.
     """.trimIndent()
+
+    private val KOORDINATER = mapOf(
+        Boksformat.HJORNER to """
+            - Koordinatene er heltall fra 0 til 1000 relativt til bildets bredde og høyde,
+              med origo øverst til venstre: x1,y1 er øvre venstre hjørne og x2,y2 nedre høyre hjørne.
+              Midten av bildet er altså x=500, y=500, uavhengig av bildets størrelse og format.
+        """.trimIndent(),
+        Boksformat.BOX_2D to """
+            - Hver boks er en box_2d: [ymin, xmin, ymax, xmax], heltall normalisert til 0–1000.
+        """.trimIndent(),
+    )
+
+    fun system(format: Boksformat): String = GRUNNREGLER + "\n" + KOORDINATER.getValue(format)
+
+    val SYSTEM = system(Boksformat.HJORNER)
 
     const val BRUKER = "List matvarene i kjøleskapet på bildet."
 
+    private val BOKS_SKJEMA = mapOf(
+        Boksformat.HJORNER to mapOf(
+            "type" to "object",
+            "additionalProperties" to false,
+            "required" to listOf("x1", "y1", "x2", "y2"),
+            "properties" to listOf("x1", "y1", "x2", "y2").associateWith { mapOf("type" to "integer") },
+        ),
+        Boksformat.BOX_2D to mapOf(
+            "type" to "array",
+            "description" to "box_2d: [ymin, xmin, ymax, xmax], 0–1000",
+            "items" to mapOf("type" to "integer"),
+            "minItems" to 4,
+            "maxItems" to 4,
+        ),
+    )
+
     /** JSON-skjema for svaret. Holdt enkelt så alle leverandørene støtter det. */
-    val SKJEMA: Map<String, Any> = mapOf(
+    fun skjema(format: Boksformat): Map<String, Any> = mapOf(
         "type" to "object",
         "additionalProperties" to false,
         "required" to listOf("varer"),
@@ -55,18 +96,15 @@ object AnalysePrompt {
                         "bokser" to mapOf(
                             "type" to "array",
                             "description" to "Hvor varen er i bildet, normaliserte koordinater 0–1000",
-                            "items" to mapOf(
-                                "type" to "object",
-                                "additionalProperties" to false,
-                                "required" to listOf("x1", "y1", "x2", "y2"),
-                                "properties" to listOf("x1", "y1", "x2", "y2").associateWith { mapOf("type" to "integer") },
-                            ),
+                            "items" to BOKS_SKJEMA.getValue(format),
                         ),
                     ),
                 ),
             ),
         ),
     )
+
+    val SKJEMA = skjema(Boksformat.HJORNER)
 
     /** Øvre grense for antall av én vare; høyere tall er nesten alltid feiltolking. */
     const val MAKS_ANTALL = 99
@@ -104,13 +142,19 @@ object AnalysePrompt {
     }
 
     /**
-     * Klemmer koordinatene inn i 0–1000 og sorterer hjørnene, så en boks med
-     * byttede hjørner fortsatt blir riktig. Bokser uten areal droppes; varen beholdes.
+     * Leser en boks i ett av de to formatene. Klemmer koordinatene inn i 0–1000 og
+     * sorterer hjørnene, så en boks med byttede hjørner fortsatt blir riktig.
+     * Bokser uten areal droppes; varen beholdes.
      */
     private fun tilBoks(node: JsonNode): Boks? {
-        val tall = listOf("x1", "y1", "x2", "y2").map { node.get(it)?.takeIf { n -> n.isNumber }?.asInt() ?: return null }
-            .map { it.coerceIn(0, Boks.MAKS) }
-        val (xa, ya, xb, yb) = tall
+        val hjorner = if (node.isArray) {
+            // box_2d: [ymin, xmin, ymax, xmax]
+            if (node.size() != 4 || !node.all { it.isNumber }) return null
+            listOf(node[1], node[0], node[3], node[2]).map { it.asInt() }
+        } else {
+            listOf("x1", "y1", "x2", "y2").map { node.get(it)?.takeIf { n -> n.isNumber }?.asInt() ?: return null }
+        }
+        val (xa, ya, xb, yb) = hjorner.map { it.coerceIn(0, Boks.MAKS) }
         val boks = Boks(minOf(xa, xb), minOf(ya, yb), maxOf(xa, xb), maxOf(ya, yb))
         return boks.takeIf { it.x2 > it.x1 && it.y2 > it.y1 }
     }
