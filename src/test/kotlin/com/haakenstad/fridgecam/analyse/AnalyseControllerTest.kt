@@ -1,21 +1,33 @@
 package com.haakenstad.fridgecam.analyse
 
 import com.haakenstad.fridgecam.common.GlobalExceptionHandler
+import com.haakenstad.fridgecam.innlogging.JwtService
+import com.haakenstad.fridgecam.innlogging.SecurityConfig
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.mock.web.MockMultipartFile
+import org.springframework.test.web.servlet.MockMultipartHttpServletRequestDsl
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.multipart
 
-@WebMvcTest(AnalyseController::class)
-@Import(GlobalExceptionHandler::class, AnalyseControllerTest.Config::class)
+@WebMvcTest(
+    AnalyseController::class,
+    properties = ["fridgecam.jwt.hemmelighet=en-testhemmelighet-som-er-lang-nok-for-hs256"],
+    // Som i FridgeCamApplication: ingen ubrukt standardbruker med generert passord.
+    excludeAutoConfiguration = [UserDetailsServiceAutoConfiguration::class],
+)
+@Import(GlobalExceptionHandler::class, SecurityConfig::class, JwtService::class, AnalyseControllerTest.Config::class)
 class AnalyseControllerTest(
     @Autowired private val mvc: MockMvc,
+    @Autowired jwt: JwtService,
 ) {
+
+    private val token = jwt.lag(1)
 
     @TestConfiguration
     class Config {
@@ -24,8 +36,17 @@ class AnalyseControllerTest(
     }
 
     @Test
-    fun `JPEG gir varelisten fra leverandøren`() {
+    fun `uten innlogging avvises forespørselen før bildet sendes til AI`() {
         mvc.multipart("/api/analyze") { file(bilde(JPEG)) }
+            .andExpect {
+                status { isUnauthorized() }
+                jsonPath("$.code") { value("ikke_innlogget") }
+            }
+    }
+
+    @Test
+    fun `JPEG gir varelisten fra leverandøren`() {
+        mvc.multipart("/api/analyze") { innlogget(); file(bilde(JPEG)) }
             .andExpect {
                 status { isOk() }
                 jsonPath("$.leverandor") { value("fake") }
@@ -41,7 +62,7 @@ class AnalyseControllerTest(
     @Test
     fun `PNG og WebP godtas`() {
         for (data in listOf(PNG, WEBP)) {
-            mvc.multipart("/api/analyze") { file(bilde(data)) }
+            mvc.multipart("/api/analyze") { innlogget(); file(bilde(data)) }
                 .andExpect { status { isOk() } }
         }
     }
@@ -50,7 +71,7 @@ class AnalyseControllerTest(
     fun `fil som bare later som den er et bilde avvises`() {
         val tekst = "dette er ikke et bilde".toByteArray()
 
-        mvc.multipart("/api/analyze") { file(bilde(tekst, contentType = "image/jpeg")) }
+        mvc.multipart("/api/analyze") { innlogget(); file(bilde(tekst, contentType = "image/jpeg")) }
             .andExpect {
                 status { isUnsupportedMediaType() }
                 jsonPath("$.code") { value("ugyldig_bildeformat") }
@@ -59,7 +80,7 @@ class AnalyseControllerTest(
 
     @Test
     fun `tomt bilde avvises`() {
-        mvc.multipart("/api/analyze") { file(bilde(ByteArray(0))) }
+        mvc.multipart("/api/analyze") { innlogget(); file(bilde(ByteArray(0))) }
             .andExpect {
                 status { isBadRequest() }
                 jsonPath("$.code") { value("bilde_mangler") }
@@ -68,11 +89,15 @@ class AnalyseControllerTest(
 
     @Test
     fun `forespørsel uten bilde avvises`() {
-        mvc.multipart("/api/analyze") { file(MockMultipartFile("noe_annet", "x.jpg", "image/jpeg", JPEG)) }
+        mvc.multipart("/api/analyze") { innlogget(); file(MockMultipartFile("noe_annet", "x.jpg", "image/jpeg", JPEG)) }
             .andExpect {
                 status { isBadRequest() }
                 jsonPath("$.code") { value("bilde_mangler") }
             }
+    }
+
+    private fun MockMultipartHttpServletRequestDsl.innlogget() {
+        header("Authorization", "Bearer $token")
     }
 
     private fun bilde(data: ByteArray, contentType: String = "image/jpeg") =

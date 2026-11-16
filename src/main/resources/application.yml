@@ -36,6 +36,14 @@ logging:
     com.haakenstad.fridgecam: INFO
 
 fridgecam:
+  jwt:
+    # Må settes i prod (Fly secret), minst 32 tegn; appen starter ikke uten.
+    # Lag en med: openssl rand -base64 48
+    hemmelighet: ${JWT_SECRET:}
+    levetid: 30d
+  registrering:
+    # Kode som kreves for å registrere seg. Uten kode er registrering stengt.
+    kode: ${FRIDGECAM_REGISTRERINGSKODE:}
   ai:
     # fake | anthropic | gemini. Må settes i prod; appen starter ikke uten.
     provider: ${AI_PROVIDER:}

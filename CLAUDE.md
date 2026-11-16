@@ -48,8 +48,20 @@ cd frontend && npm test                    # Vitest
 ### Profiler og konfigurasjon
 - `local`-profil: `LocalDataSourceConfig` starter Zonky Postgres på port 55433 (ikke 55432,
   den bruker talik-ai). `.env` i prosjektmappen leses (`spring.config.import`), se `.env.example`.
-- Uten profil (prod): `SPRING_DATASOURCE_*` og `AI_PROVIDER` må settes; appen stopper ellers.
+- Uten profil (prod): `SPRING_DATASOURCE_*`, `AI_PROVIDER` og `JWT_SECRET` må settes; appen stopper ellers.
 - Gjør aldri `local` til standardprofil: prod ville da stille brukt en flyktig database.
+
+### Innlogging (`innlogging/`)
+- Stateless JWT som i talik-ai: `Authorization: Bearer …`, HS256 via `jjwt`, levetid 30 dager.
+  Tokenet har bare bruker-id (`sub`); hentes i controllere med `@AuthenticationPrincipal InnloggetBruker`.
+- `POST /api/auth/registrer`, `POST /api/auth/logg-inn`, `GET /api/meg`. Registrering lager en
+  husstand («Hjemme») med brukeren som `EIER`, i samme transaksjon.
+- Alt under `/api/` krever innlogging (unntatt de to over), og avvisning gir 401 `ikke_innlogget`
+  fra `SecurityConfig`. `/actuator/health`, frontenden og dype lenker er åpne.
+- Registrering krever `FRIDGECAM_REGISTRERINGSKODE`; uten satt kode er registrering stengt.
+  `JWT_SECRET` (minst 32 tegn) kreves i prod; `local` har en utviklingsverdi.
+- `JwtFilter` er bevisst ikke en bean (ellers registreres den også som vanlig servlet-filter).
+  `@WebMvcTest` for beskyttede controllere: `@Import(SecurityConfig, JwtService)` og ekte token.
 
 ### AI-analyse (`analyse/`)
 - `VisionProvider` → `Analyseresultat(varer, forbruk)`. Implementasjoner: `FakeVisionProvider`,
@@ -61,7 +73,9 @@ cd frontend && npm test                    # Vitest
   `HJORNER` (x1,y1,x2,y2) for Claude, `BOX_2D` ([ymin,xmin,ymax,xmax]) for Gemini; begge
   normalisert 0–1000 og oversatt til `Boks(x1,y1,x2,y2)`.
 - Feilkoder via `ApiException` → `{code, message}`: `rate_limit`, `ai_utilgjengelig`,
-  `ai_avviste`, `ai_feil`, `bilde_mangler`, `ugyldig_bildeformat`, `bilde_for_stort`.
+  `ai_avviste`, `ai_feil`, `bilde_mangler`, `ugyldig_bildeformat`, `bilde_for_stort`; for innlogging
+  `ikke_innlogget`, `ugyldig_innlogging`, `epost_i_bruk`, `ugyldig_registreringskode`,
+  `registrering_stengt`, og `ugyldig_foresporsel` for valideringsfeil (meldingen er fra feltet).
   Frontend (`frontend/src/api/analyse.ts`) har norske meldinger for hver kode.
 - `GlobalExceptionHandler` er avgrenset med `basePackages`; ellers fanger den Springs 404 for
   statiske filer og dype lenker gir 500. `MaxUploadSizeExceededException` håndteres i egen,
@@ -78,5 +92,6 @@ cd frontend && npm test                    # Vitest
 ## Konvensjoner
 - Ingen JPA: `NamedParameterJdbcTemplate`, `BIGINT GENERATED ALWAYS AS IDENTITY`, `INSERT … RETURNING`.
 - Norske kolonnenavn og norske domenenavn i Kotlin (`FunnetVare`, `Sikkerhet`, `Boks`).
-- Tester: `@WebMvcTest` for controllere, Zonky for databasetester, JDK `HttpServer` som falsk
+- Tester: `@WebMvcTest` for controllere, `AppTest` som base for tester mot hele appen (deler
+  kontekst og database, så bruk `unikEpost()`), Zonky for databasetester, JDK `HttpServer` som falsk
   API-server for AI-leverandørene. Frontend: Vitest med `vi.stubGlobal('fetch', …)`.

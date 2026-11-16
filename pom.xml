@@ -22,6 +22,7 @@
         <kotlin.version>2.4.21</kotlin.version>
         <kotlin.code.style>official</kotlin.code.style>
         <anthropic.version>3.8.0</anthropic.version>
+        <jjwt.version>0.13.0</jjwt.version>
         <embedded.postgres.version>2.2.2</embedded.postgres.version>
         <!-- Postgres-versjonen i prod bør holdes lik denne. -->
         <embedded.postgres.binaries.version>18.7.0</embedded.postgres.binaries.version>
@@ -74,6 +75,29 @@
             <artifactId>kotlin-reflect</artifactId>
         </dependency>
 
+        <!-- Innlogging: Spring Security med stateless JWT (#26) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>${jjwt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>${jjwt.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- AI: offisiell Anthropic Java SDK (#9) -->
         <dependency>
             <groupId>com.anthropic</groupId>
@@ -117,6 +141,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
