@@ -5,6 +5,11 @@ fridgecam:
     # Låst port så en DB-tilkobling i IntelliJ overlever omstart.
     # 55433 for å ikke kollidere med talik-ai (55432). 0 = tilfeldig ledig port.
     port: ${FRIDGECAM_LOCAL_DB_PORT:55433}
+  ai:
+    # Lokalt brukes fake-leverandøren med mindre AI_PROVIDER er satt.
+    provider: ${AI_PROVIDER:fake}
+    # Så lastevisningen i appen synes, som med et ekte AI-kall.
+    fake-forsinkelse: 1500ms
 
 logging:
   level:

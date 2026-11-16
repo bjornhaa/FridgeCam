@@ -46,12 +46,12 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 ## Fase 1 – Bilde → vareliste
 - [x] PWA: kameraknapp (`<input capture="environment">`), forhåndsvisning
 - [x] Krympe/komprimere bilde i nettleseren før opplasting
-- [ ] Backend: `POST /api/analyze` som sender bildet til AI og returnerer JSON
-- [ ] `VisionProvider`-grensesnitt slik at AI-leverandør kan byttes (valgt via `AI_PROVIDER`)
+- [x] Backend: `POST /api/analyze` som sender bildet til AI og returnerer JSON
+- [x] `VisionProvider`-grensesnitt slik at AI-leverandør kan byttes (valgt via `AI_PROVIDER`)
 - [ ] Implementasjon: Anthropic (offisiell Java SDK, modell konfigurerbar via `AI_MODEL`)
 - [ ] Implementasjon: Google Gemini (gratisnivå, for testing/utvikling)
 - [ ] Felles prompt + JSON-skjema for strukturert svar (navn, antall, sikkerhet), validert i backend
-- [ ] Vise resultatlisten i appen
+- [x] Vise resultatlisten i appen
 - [ ] API-nøkler via miljøvariabler / Fly secrets, aldri i frontend
 
 ## Fase 2 – Brukere, husstand og lagring
