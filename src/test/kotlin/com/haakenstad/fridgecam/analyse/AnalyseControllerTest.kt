@@ -33,6 +33,8 @@ class AnalyseControllerTest(
                 jsonPath("$.varer[0].navn") { value("melk") }
                 jsonPath("$.varer[0].antall") { value(1) }
                 jsonPath("$.varer[0].sikkerhet") { value("høy") }
+                jsonPath("$.varer[0].bokser[0].x1") { value(80) }
+                jsonPath("$.varer[0].bokser[0].y2") { value(420) }
             }
     }
 

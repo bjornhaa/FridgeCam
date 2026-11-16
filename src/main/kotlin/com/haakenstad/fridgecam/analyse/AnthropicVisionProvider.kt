@@ -46,7 +46,7 @@ class AnthropicVisionProvider(
         .putAllAdditionalProperties(AnalysePrompt.SKJEMA.mapValues { JsonValue.from(it.value) })
         .build()
 
-    override fun analyser(bilde: ByteArray, mimeType: String): List<FunnetVare> {
+    override fun analyser(bilde: ByteArray, mimeType: String): Analyseresultat {
         val svar = try {
             client.beta().messages().create(lagForesporsel(bilde, mimeType))
         } catch (e: AnthropicServiceException) {
@@ -55,7 +55,15 @@ class AnthropicVisionProvider(
             log.warn("Fikk ikke kontakt med Anthropic", e)
             throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ai_utilgjengelig", "Fikk ikke kontakt med AI-tjenesten.")
         }
-        return tolkSvar(svar)
+        return Analyseresultat(tolkSvar(svar), forbruk(svar))
+    }
+
+    private fun forbruk(svar: BetaMessage): Tokenforbruk {
+        val brukt = svar.model().asString()
+        val inn = svar.usage().inputTokens()
+        val ut = svar.usage().outputTokens()
+        val kostnad = PRISER[brukt]?.let { (innPris, utPris) -> (inn * innPris + ut * utPris) / 1_000_000.0 }
+        return Tokenforbruk(brukt, inn, ut, kostnad)
     }
 
     /** Spring kaller denne ved nedstenging (AutoCloseable), så HTTP-klienten frigjøres. */
@@ -153,6 +161,21 @@ class AnthropicVisionProvider(
 
     companion object {
         const val STANDARD_MODELL = "claude-opus-5-5"
+
+        /**
+         * Listepris i USD per million tokens (inn, ut), per november 2026.
+         * Bare til anslag i loggen; fasit er Cost-siden i Claude Console.
+         * Ut-tokens inkluderer tenkning, som faktureres som output.
+         */
+        val PRISER: Map<String, Pair<Double, Double>> = mapOf(
+            "claude-opus-5-5" to (4.0 to 20.0),
+            "claude-opus-5" to (5.0 to 25.0),
+            "claude-opus-4-8" to (5.0 to 25.0),
+            "claude-sonnet-5-5" to (2.0 to 10.0),
+            "claude-sonnet-5" to (2.0 to 10.0),
+            "claude-haiku-5-5" to (0.10 to 0.50),
+            "claude-fable-5-2" to (8.0 to 40.0),
+        )
 
         /** Modeller som støtter server-side fallbacks med `fallbacks: "default"`. */
         val MODELLER_MED_FALLBACK = setOf(

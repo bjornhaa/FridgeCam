@@ -25,6 +25,20 @@ describe('analyserBilde', () => {
     expect((init?.body as FormData).get('bilde')).toBeInstanceOf(File)
   })
 
+  it('gir tom liste med bokser når feltet mangler i svaret', async () => {
+    svar(200, { varer: [{ navn: 'brunost', antall: 1, sikkerhet: 'høy' }], leverandor: 'anthropic' })
+
+    const resultat = await analyserBilde(bilde)
+
+    expect(resultat.varer[0].bokser).toEqual([])
+  })
+
+  it('tåler svar uten varer', async () => {
+    svar(200, {})
+
+    expect((await analyserBilde(bilde)).varer).toEqual([])
+  })
+
   it('gjør kjent feilkode om til norsk melding', async () => {
     svar(413, { code: 'bilde_for_stort', message: 'Bildet er for stort.' })
 

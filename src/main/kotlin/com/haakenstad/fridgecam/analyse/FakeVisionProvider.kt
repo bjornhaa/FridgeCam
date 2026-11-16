@@ -15,19 +15,22 @@ class FakeVisionProvider(
 
     override val navn = "fake"
 
-    override fun analyser(bilde: ByteArray, mimeType: String): List<FunnetVare> {
+    override fun analyser(bilde: ByteArray, mimeType: String): Analyseresultat {
         if (!forsinkelse.isZero) Thread.sleep(forsinkelse)
-        return VARER
+        return Analyseresultat(VARER)
     }
 
     companion object {
         val VARER = listOf(
-            FunnetVare("melk", 1, Sikkerhet.HOY),
-            FunnetVare("egg", 6, Sikkerhet.HOY),
-            FunnetVare("smør", 1, Sikkerhet.HOY),
-            FunnetVare("gulost", 1, Sikkerhet.MIDDELS),
-            FunnetVare("yoghurt", 3, Sikkerhet.MIDDELS),
-            FunnetVare("agurk", 1, Sikkerhet.LAV),
+            FunnetVare("melk", 1, Sikkerhet.HOY, listOf(Boks(80, 60, 260, 420))),
+            FunnetVare("egg", 6, Sikkerhet.HOY, listOf(Boks(320, 300, 620, 420))),
+            FunnetVare("smør", 1, Sikkerhet.HOY, listOf(Boks(660, 330, 860, 420))),
+            FunnetVare("gulost", 1, Sikkerhet.MIDDELS, listOf(Boks(100, 520, 380, 640))),
+            FunnetVare(
+                "yoghurt", 3, Sikkerhet.MIDDELS,
+                listOf(Boks(450, 500, 560, 650), Boks(570, 500, 680, 650), Boks(690, 500, 800, 650)),
+            ),
+            FunnetVare("agurk", 1, Sikkerhet.LAV, listOf(Boks(150, 800, 700, 920))),
         )
     }
 }

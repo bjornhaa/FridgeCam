@@ -69,9 +69,9 @@ class AnthropicVisionProviderTest {
     fun `sender bilde, prompt og skjema, og tolker svaret`() {
         svar = melding("""{"varer":[{"navn":"melk","antall":1,"sikkerhet":"høy"}]}""")
 
-        val varer = provider().analyser(bilde, "image/jpeg")
+        val resultat = provider().analyser(bilde, "image/jpeg")
 
-        assertThat(varer).containsExactly(FunnetVare("melk", 1, Sikkerhet.HOY))
+        assertThat(resultat.varer).containsExactly(FunnetVare("melk", 1, Sikkerhet.HOY))
         val body = mottattBody!!
         assertThat(body["model"].asString()).isEqualTo("claude-opus-5-5")
         assertThat(body["system"].asString()).isEqualTo(AnalysePrompt.SYSTEM)
@@ -81,7 +81,29 @@ class AnthropicVisionProviderTest {
         assertThat(innhold[0]["source"]["data"].asString()).isEqualTo(Base64.getEncoder().encodeToString(bilde))
         assertThat(innhold[1]["text"].asString()).isEqualTo(AnalysePrompt.BRUKER)
         assertThat(body["output_config"]["effort"].asString()).isEqualTo("medium")
-        assertThat(body["output_config"]["format"]["schema"]["required"][0].asString()).isEqualTo("varer")
+        val skjema = body["output_config"]["format"]["schema"]
+        assertThat(skjema["required"][0].asString()).isEqualTo("varer")
+        assertThat(skjema["properties"]["varer"]["items"]["properties"].has("bokser")).isTrue()
+    }
+
+    @Test
+    fun `rapporterer tokenforbruk og anslått kostnad`() {
+        svar = melding("""{"varer":[]}""")
+
+        val forbruk = provider().analyser(bilde, "image/jpeg").forbruk!!
+
+        // 1600 inn × $4 + 120 ut × $20 per million tokens
+        assertThat(forbruk).isEqualTo(Tokenforbruk("claude-opus-5-5", 1600, 120, 0.0088))
+    }
+
+    @Test
+    fun `ukjent modell gir forbruk uten kostnad`() {
+        svar = melding("""{"varer":[]}""").replace("\"model\":\"claude-opus-5-5\"", "\"model\":\"claude-ny-modell\"")
+
+        val forbruk = provider().analyser(bilde, "image/jpeg").forbruk!!
+
+        assertThat(forbruk.modell).isEqualTo("claude-ny-modell")
+        assertThat(forbruk.kostnadUsd).isNull()
     }
 
     @Test
