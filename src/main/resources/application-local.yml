@@ -1,5 +1,11 @@
 # Profil 'local' – aktiveres som standard av spring-boot-maven-plugin (mvn spring-boot:run).
 # DataSource leveres av LocalDataSourceConfig (Zonky embedded Postgres, flyktig).
+spring:
+  config:
+    # Leser API-nøkler o.l. fra .env i prosjektmappen hvis den finnes (se .env.example).
+    # Bare lokalt: prod bruker Fly secrets. Miljøvariabler vinner over .env.
+    import: optional:file:.env[.properties]
+
 fridgecam:
   local-db:
     # Låst port så en DB-tilkobling i IntelliJ overlever omstart.
