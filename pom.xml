@@ -21,6 +21,7 @@
         <java.version>25</java.version>
         <kotlin.version>2.4.21</kotlin.version>
         <kotlin.code.style>official</kotlin.code.style>
+        <anthropic.version>3.8.0</anthropic.version>
         <embedded.postgres.version>2.2.2</embedded.postgres.version>
         <!-- Postgres-versjonen i prod bør holdes lik denne. -->
         <embedded.postgres.binaries.version>18.7.0</embedded.postgres.binaries.version>
@@ -71,6 +72,13 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-reflect</artifactId>
+        </dependency>
+
+        <!-- AI: offisiell Anthropic Java SDK (#9) -->
+        <dependency>
+            <groupId>com.anthropic</groupId>
+            <artifactId>anthropic-java</artifactId>
+            <version>${anthropic.version}</version>
         </dependency>
 
         <!-- Database -->

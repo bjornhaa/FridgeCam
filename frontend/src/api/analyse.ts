@@ -28,6 +28,9 @@ const MELDINGER: Record<string, string> = {
   ugyldig_bildeformat: 'Bildeformatet støttes ikke. Prøv å ta bildet på nytt.',
   bilde_mangler: 'Bildet kom ikke fram. Prøv igjen.',
   rate_limit: 'AI-tjenesten har for mye å gjøre akkurat nå. Vent litt og prøv igjen.',
+  ai_utilgjengelig: 'AI-tjenesten er utilgjengelig akkurat nå. Prøv igjen om litt.',
+  ai_avviste: 'AI-en kunne ikke analysere dette bildet. Prøv et annet bilde.',
+  ai_feil: 'Noe gikk galt hos AI-tjenesten. Prøv igjen.',
 }
 
 export async function analyserBilde(bilde: File, signal?: AbortSignal): Promise<AnalyseSvar> {
