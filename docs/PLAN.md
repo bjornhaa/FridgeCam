@@ -59,7 +59,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [x] Tabeller: bruker, husstand, husstand_medlem (V1)
 - [x] Innlogging i backend med JWT; husstand opprettes ved registrering (#26)
 - [x] Begrens hvem som kan registrere seg med registreringskode (#27)
-- [ ] Innlogging i frontend (#28)
+- [x] Innlogging i frontend (#28)
 - [ ] Navigasjon: Skann / Kjøleskapet / Profil (#29)
 - [ ] Datamodell for skanning, bilde og beholdning (#30)
 - [ ] Redigerbar vareliste etter skanning (#31)

@@ -60,6 +60,10 @@ cd frontend && npm test                    # Vitest
   fra `SecurityConfig`. `/actuator/health`, frontenden og dype lenker er åpne.
 - Registrering krever `FRIDGECAM_REGISTRERINGSKODE`; uten satt kode er registrering stengt.
   `JWT_SECRET` (minst 32 tegn) kreves i prod; `local` har en utviklingsverdi.
+- Frontend: `api/klient.ts` (`apiKall`) legger på token fra `api/token.ts` (localStorage) og gjør
+  `{code, message}` om til `ApiFeil` med norsk melding. 401 *med* token = utlogget (lyttere varsles);
+  401 uten token er en vanlig feil (feil passord). `innlogging/Innlogging.tsx` holder status, og
+  `KreverInnlogging` sender til `/logg-inn`. Nye API-kall skal gå via `apiKall`.
 - `JwtFilter` er bevisst ikke en bean (ellers registreres den også som vanlig servlet-filter).
   `@WebMvcTest` for beskyttede controllere: `@Import(SecurityConfig, JwtService)` og ekte token.
 

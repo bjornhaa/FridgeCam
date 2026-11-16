@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { analyserBilde, AnalyseFeil } from './analyse.ts'
+import { analyserBilde } from './analyse.ts'
+import { ApiFeil } from './klient.ts'
 
 const bilde = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'kjoleskap.jpg', { type: 'image/jpeg' })
 
@@ -65,7 +66,7 @@ describe('analyserBilde', () => {
 
     const feil = await analyserBilde(bilde).catch((e: unknown) => e)
 
-    expect(feil).toBeInstanceOf(AnalyseFeil)
-    expect((feil as AnalyseFeil).code).toBe('nettverk')
+    expect(feil).toBeInstanceOf(ApiFeil)
+    expect((feil as ApiFeil).code).toBe('nettverk')
   })
 })
