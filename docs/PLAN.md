@@ -35,7 +35,7 @@ Da slipper vi en datamigrering når flere skal dele kjøleskap.
 - `beholdning_vare` – nåværende varer i husstandens kjøleskap
 - `fast_vare` – varer husstanden alltid vil ha, med ønsket minimumsantall
 - `handleliste_vare` – genererte og manuelt lagt til varer, med avhuking
-- API-nøkkel per husstand (kryptert), fra fase 4
+- API-nøkkel per husstand (kryptert), fra fase 3
 
 Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
@@ -60,7 +60,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 ## Fase 2 – Brukere, husstand og lagring
 - [x] Tabeller: bruker, husstand, husstand_medlem (V1)
 - [x] Innlogging i backend med JWT; husstand opprettes ved registrering (#26)
-- [x] ~~Registreringskode fra miljøvariabel (#27)~~ – fjernet igjen; erstattet av API-nøkkel per husstand i fase 4
+- [x] ~~Registreringskode fra miljøvariabel (#27)~~ – fjernet igjen; erstattet av API-nøkkel per husstand i fase 3
 - [x] Egne Flyway-migreringer for lokal utvikling med testbruker, som i talik-ai
 - [x] Innlogging i frontend (#28)
 - [x] Navigasjon: Skann / Kjøleskapet / Profil (#29)
@@ -69,25 +69,33 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [x] Lagre skanning som beholdning; ny skanning erstatter beholdningen (#32)
 - [x] Vis kjøleskapet med siste bilde og bokser (#33)
 
-## Fase 3 – Handleliste
-- [ ] Normalisering av varenavn (f.eks. «lettmelk» ≈ «melk»), så beholdning kan sammenlignes med faste varer
-- [ ] Administrere faste varer (med ønsket minimumsantall)
-- [ ] Generere handleliste = faste varer − beholdning
-- [ ] Manuelt legge til / huke av varer i handlelisten
-- [ ] Dele handlelisten (kopiere tekst / del-knapp via Web Share API)
-
-## Fase 4 – PWA og drift
-- [ ] `manifest.webmanifest`, ikoner, service worker (installerbar, offline-visning av handleliste)
-- [ ] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert)
-  - Maskinen kan gå i dvale (`auto_stop_machines`, `min_machines_running = 0`); kaldstart på noen sekunder er greit
-  - Kostnadsvurdering: appmaskin i dvale + Postgres-maskin og volum (bildene ligger i Postgres)
-- [ ] API-nøkkel per husstand, kryptert med AES-256-GCM (som Spotify-tokens i talik-ai), før appen legges ut
+## Fase 3 – Drift og PWA
+Tatt før handlelisten (bestemt 2026-11-17): appen tas i bruk på eget kjøleskap, så
+ekte skanninger og rettelser viser hva AI-en bommer på før handlelisten bygges, og
+mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene tas i.
+- [ ] API-nøkkel per husstand, kryptert med AES-256-GCM (som Spotify-tokens i talik-ai), før appen legges ut (#42)
   - Hver husstand betaler for egne AI-kall, så åpen registrering koster ikke appeieren AI-kreditt
   - Ingen felles nøkkel fra miljøet i prod; uten nøkkel ber appen husstanden legge inn en
   - Alle medlemmer i husstanden deler nøkkelen
-- [ ] Grense for lagrede bilder per husstand (åpen registrering skal ikke kunne fylle Postgres-volumet)
-- [ ] Deploy fra GitHub Actions ved push til `main`
-- [ ] Backup av Postgres
+- [ ] Grense for lagrede bilder per husstand (åpen registrering skal ikke kunne fylle Postgres-volumet) (#43)
+- [ ] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert) (#44)
+  - Maskinen kan gå i dvale (`auto_stop_machines`, `min_machines_running = 0`); kaldstart på noen sekunder er greit
+  - Kostnadsvurdering: appmaskin i dvale + Postgres-maskin og volum (bildene ligger i Postgres)
+- [ ] Deploy fra GitHub Actions ved push til `main` (#45)
+- [ ] Backup av Postgres (som i talik-ai, med sjekk av at backupen er fersk og kan gjenopprettes) (#46)
+- [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
+
+## Fase 4 – Handleliste
+- [ ] Undersøke Odas offisielle MCP-server (`https://oda.com/mcp`): vilkår for bruk fra en tredjepartsapp,
+  og hva produktsøk, kategoritre og kjøpshistorikk gir i praksis (prøves fra Claude Code med egen Oda-konto)
+- [ ] Normalisering av varenavn (f.eks. «lettmelk» ≈ «melk»), så beholdning kan sammenlignes med faste varer
+  - Mulig hjelp fra Odas produkter og kategoritre
+- [ ] Administrere faste varer (med ønsket minimumsantall); kanskje forslag fra kjøpshistorikk hos Oda
+- [ ] Generere handleliste = faste varer − beholdning
+- [ ] Manuelt legge til / huke av varer i handlelisten
+- [ ] Dele handlelisten (kopiere tekst / del-knapp via Web Share API)
+- [ ] Kanskje: legge handlelisten i Oda-handlekurven eller en lagret liste (betaling skjer på oda.com)
+- [ ] Offline-visning av handlelisten (service worker fra fase 3)
 
 ## Fase 5 – Flere brukere i husstanden
 - [ ] Invitere andre til husstanden (invitasjonslenke/kode)
@@ -96,7 +104,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
 ## Fase 6 – Åpne for andre
 - [ ] Flere AI-leverandører (f.eks. OpenAI) bak samme grensesnitt
-- [ ] Husstand velger leverandør (nøkkel per husstand finnes allerede fra fase 4)
+- [ ] Husstand velger leverandør (nøkkel per husstand finnes allerede fra fase 3)
 - [ ] Begrensning av antall kall per husstand (kostnadskontroll)
 
 ## Senere / ideer
@@ -105,6 +113,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - Flytte bilder til objektlagring (Tigris) hvis Postgres-volumet blir for lite
 - Utløpsdatoer og varsler
 - Oppskriftsforslag basert på beholdning
+- Bruke kjøpshistorikk fra Oda i prompten, så AI-en gjenkjenner merkene husstanden faktisk kjøper
 
 ## Beslutninger
 - **AI:** Flere leverandører bak et felles grensesnitt. Claude Opus 5.5 (`medium`) som standard etter måling mot fasit (#11); Sonnet 5.5 som raskere/billigere alternativ. Gemini fungerer, men gratisnivået avviser mange kall.
@@ -112,7 +121,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - **Database:** PostgreSQL fra start (Zonky lokalt, Fly Postgres i prod)
 - **Stack:** Samme som talik-ai (Spring Boot + Spring JDBC + Flyway + JWT, Vite/React)
 - **Brukere:** Husstand med flere brukere; datamodellen støtter det fra start, invitasjon kommer i fase 5
-- **Innlogging:** JWT som `Authorization: Bearer …`, som i talik-ai. Registrering er åpen; i stedet for registreringskode legger hver husstand inn egen API-nøkkel før appen legges ut (fase 4)
+- **Innlogging:** JWT som `Authorization: Bearer …`, som i talik-ai. Registrering er åpen; i stedet for registreringskode legger hver husstand inn egen API-nøkkel før appen legges ut (fase 3)
 - **Bilder:** Lagres i samme størrelse som sendes til AI-en (maks 1500 px, ~170 kB), i Postgres. Boksene passer da til bildet
 - **Beholdning:** En ny skanning erstatter hele beholdningen (bildet er et øyeblikksbilde)
 - **Drift:** Fly.io med maskin som kan gå i dvale

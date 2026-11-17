@@ -3,7 +3,7 @@ import { NavLink, Outlet } from 'react-router'
 /**
  * Appens ramme for innloggede: siden øverst og faner nederst, der tommelen når.
  * Fanelinjen ligger fast i bunnen og får ekstra luft over hjem-indikatoren på
- * iPhone (safe-area). Handleliste kommer som egen fane i fase 3.
+ * iPhone (safe-area). Handleliste kommer som egen fane i fase 4.
  */
 export function Faner() {
   return (

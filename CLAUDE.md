@@ -71,7 +71,7 @@ cd frontend && npm test                    # Vitest
 - Alt under `/api/` krever innlogging (unntatt de to over), og avvisning gir 401 `ikke_innlogget`
   fra `SecurityConfig`. `/actuator/health`, frontenden og dype lenker er åpne.
 - Registrering er åpen. Før appen legges ut på Fly skal hver husstand legge inn egen AI-nøkkel
-  (kryptert i databasen), så fremmede ikke bruker appeierens kreditt (fase 4).
+  (kryptert i databasen), så fremmede ikke bruker appeierens kreditt (fase 3).
   `JWT_SECRET` (minst 32 tegn) kreves i prod; `local` har en utviklingsverdi.
 - Frontend: `api/klient.ts` (`apiKall`) legger på token fra `api/token.ts` (localStorage) og gjør
   `{code, message}` om til `ApiFeil` med norsk melding. 401 *med* token = utlogget (lyttere varsles);
