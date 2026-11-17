@@ -13,6 +13,8 @@ export type RedigerbarVare = {
   sikkerhet: Sikkerhet | null
   bekreftet: boolean
   bokser: Boks[]
+  /** Plassen i AI-ens liste (backend henter boksene derfra), eller null hvis lagt til av brukeren. */
+  aiIndeks: number | null
 }
 
 export const MAKS_ANTALL = 99
@@ -26,6 +28,7 @@ export function fraAnalyse(varer: FunnetVare[]): RedigerbarVare[] {
     sikkerhet: v.sikkerhet,
     bekreftet: false,
     bokser: v.bokser,
+    aiIndeks: i,
   }))
   return [...redigerbare.filter(erUsikker), ...redigerbare.filter((v) => !erUsikker(v))]
 }
@@ -59,7 +62,7 @@ let nesteId = 0
 export function leggTil(varer: RedigerbarVare[]): { varer: RedigerbarVare[]; id: string } {
   const id = `ny-${++nesteId}`
   return {
-    varer: [...varer, { id, navn: '', antall: 1, sikkerhet: null, bekreftet: true, bokser: [] }],
+    varer: [...varer, { id, navn: '', antall: 1, sikkerhet: null, bekreftet: true, bokser: [], aiIndeks: null }],
     id,
   }
 }

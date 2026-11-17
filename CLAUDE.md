@@ -80,6 +80,16 @@ cd frontend && npm test                    # Vitest
 - `JwtFilter` er bevisst ikke en bean (ellers registreres den også som vanlig servlet-filter).
   `@WebMvcTest` for beskyttede controllere: `@Import(SecurityConfig, JwtService)` og ekte token.
 
+### Skanning og beholdning (`skanning/`, `beholdning/`, `husstand/`)
+- `/api/analyze` lagrer skanningen med en gang (bilde, AI-svar, forbruk) og returnerer `skanningId`.
+  «Lagre i kjøleskapet» sender bare den rettede listen til `POST /api/skanninger/{id}/beholdning`;
+  boksene hentes fra AI-svaret via `aiIndeks`, ikke fra klienten. Den rettede listen lagres også på
+  skanningen (`rettede_varer`), for senere måling av AI-kvalitet. `GET /api/beholdning` gir kjøleskapet,
+  `GET /api/skanninger/{id}/bilde` bildet. Frontend henter bilder med `apiBlob` (et `<img src>` kan
+  ikke sende tokenet) og viser dem med `BildeMedBokser`.
+- All tilgang til husstandsdata går via `HusstandTilgang`: `husstandFor(bruker)` og
+  `sjekkMedlem(...)`, som gir 404 `ikke_funnet` (ikke 403) for andres data.
+
 ### AI-analyse (`analyse/`)
 - `VisionProvider` → `Analyseresultat(varer, forbruk)`. Implementasjoner: `FakeVisionProvider`,
   `AnthropicVisionProvider` (offisiell Java SDK, beta-endepunkt pga. server-side fallbacks),
@@ -91,8 +101,8 @@ cd frontend && npm test                    # Vitest
   normalisert 0–1000 og oversatt til `Boks(x1,y1,x2,y2)`.
 - Feilkoder via `ApiException` → `{code, message}`: `rate_limit`, `ai_utilgjengelig`,
   `ai_avviste`, `ai_feil`, `bilde_mangler`, `ugyldig_bildeformat`, `bilde_for_stort`; for innlogging
-  `ikke_innlogget`, `ugyldig_innlogging`, `epost_i_bruk`, og
-  `ugyldig_foresporsel` for valideringsfeil (meldingen er fra feltet).
+  `ikke_innlogget`, `ugyldig_innlogging`, `epost_i_bruk`, `ikke_funnet`,
+  `ingen_husstand`, og `ugyldig_foresporsel` for valideringsfeil (meldingen er fra feltet).
   Frontend (`frontend/src/api/analyse.ts`) har norske meldinger for hver kode.
 - `GlobalExceptionHandler` er avgrenset med `basePackages`; ellers fanger den Springs 404 for
   statiske filer og dype lenker gir 500. `MaxUploadSizeExceededException` håndteres i egen,

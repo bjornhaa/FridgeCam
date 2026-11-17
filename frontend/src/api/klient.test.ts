@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { apiKall, ApiFeil, vedUtlogging } from './klient.ts'
+import { apiBlob, apiKall, ApiFeil, vedUtlogging } from './klient.ts'
 import { loggInn } from './innlogging.ts'
 import { hentToken, lagreToken } from './token.ts'
 
@@ -98,6 +98,22 @@ describe('apiKall', () => {
     expect(url).toBe('/api/auth/logg-inn')
     expect(init?.method).toBe('POST')
     expect(JSON.parse(init?.body as string)).toEqual({ epost: 'ola@example.com', passord: 'hemmelig123' })
+  })
+
+  it('henter bilder som blob med token', async () => {
+    lagreToken('t')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), { status: 200 })))
+
+    const blob = await apiBlob('/api/skanninger/1/bilde')
+
+    expect(new Uint8Array(await blob.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]))
+    expect(sendtHeader('Authorization')).toBe('Bearer t')
+  })
+
+  it('tåler 204 uten innhold', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 204 })))
+
+    await expect(apiKall('/api/skanninger/1/beholdning', { method: 'POST' })).resolves.toBeUndefined()
   })
 
   it('bruker serverens melding for valideringsfeil', async () => {

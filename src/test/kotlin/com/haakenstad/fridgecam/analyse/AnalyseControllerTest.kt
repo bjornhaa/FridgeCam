@@ -1,39 +1,24 @@
 package com.haakenstad.fridgecam.analyse
 
-import com.haakenstad.fridgecam.common.GlobalExceptionHandler
-import com.haakenstad.fridgecam.innlogging.JwtService
-import com.haakenstad.fridgecam.innlogging.SecurityConfig
+import com.haakenstad.fridgecam.AppTest
+import com.haakenstad.fridgecam.skanning.SkanningRepository
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
-import org.springframework.boot.test.context.TestConfiguration
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Import
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.web.servlet.MockMultipartHttpServletRequestDsl
-import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.multipart
 
-@WebMvcTest(
-    AnalyseController::class,
-    properties = ["fridgecam.jwt.hemmelighet=en-testhemmelighet-som-er-lang-nok-for-hs256"],
-    // Som i FridgeCamApplication: ingen ubrukt standardbruker med generert passord.
-    excludeAutoConfiguration = [UserDetailsServiceAutoConfiguration::class],
-)
-@Import(GlobalExceptionHandler::class, SecurityConfig::class, JwtService::class, AnalyseControllerTest.Config::class)
-class AnalyseControllerTest(
-    @Autowired private val mvc: MockMvc,
-    @Autowired jwt: JwtService,
-) {
+/**
+ * `/api/analyze` mot hele appen med fake-leverandøren: validering av bildet,
+ * innlogging, og at skanningen lagres.
+ */
+class AnalyseControllerTest : AppTest() {
 
-    private val token = jwt.lag(1)
+    @Autowired
+    private lateinit var skanninger: SkanningRepository
 
-    @TestConfiguration
-    class Config {
-        @Bean
-        fun visionProvider(): VisionProvider = FakeVisionProvider()
-    }
+    private val token by lazy { registrer() }
 
     @Test
     fun `uten innlogging avvises forespørselen før bildet sendes til AI`() {
@@ -49,6 +34,7 @@ class AnalyseControllerTest(
         mvc.multipart("/api/analyze") { innlogget(); file(bilde(JPEG)) }
             .andExpect {
                 status { isOk() }
+                jsonPath("$.skanningId") { isNumber() }
                 jsonPath("$.leverandor") { value("fake") }
                 jsonPath("$.varer.length()") { value(FakeVisionProvider.VARER.size) }
                 jsonPath("$.varer[0].navn") { value("melk") }
@@ -57,6 +43,19 @@ class AnalyseControllerTest(
                 jsonPath("$.varer[0].bokser[0].x1") { value(80) }
                 jsonPath("$.varer[0].bokser[0].y2") { value(420) }
             }
+    }
+
+    @Test
+    fun `skanningen lagres med bilde og AI-svar`() {
+        val svar = mvc.multipart("/api/analyze") { innlogget(); file(bilde(JPEG)) }
+            .andReturn().response.contentAsString
+        val id = Regex("\"skanningId\":(\\d+)").find(svar)!!.groupValues[1].toLong()
+
+        val skanning = skanninger.finn(id)!!
+        assertThat(skanning.leverandor).isEqualTo("fake")
+        assertThat(skanning.aiVarer).isEqualTo(FakeVisionProvider.VARER)
+        assertThat(skanning.lagret).isNull()
+        assertThat(skanninger.hentBilde(id)!!.data).isEqualTo(JPEG)
     }
 
     @Test

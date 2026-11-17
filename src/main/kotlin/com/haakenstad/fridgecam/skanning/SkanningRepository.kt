@@ -28,6 +28,15 @@ data class Skanning(
     val leverandor: String,
     val forbruk: Tokenforbruk?,
     val aiVarer: List<FunnetVare>,
+    /** Når den rettede listen ble lagret som beholdning; null hvis aldri. */
+    val lagret: Instant? = null,
+)
+
+/** En vare slik brukeren rettet den. [aiIndeks] peker på varen i AI-ens liste, null hvis lagt til. */
+data class RettetVare(
+    val navn: String,
+    val antall: Int,
+    val aiIndeks: Int?,
 )
 
 class Bilde(val mimeType: String, val data: ByteArray)
@@ -55,6 +64,7 @@ class SkanningRepository(
                 )
             },
             aiVarer = json.readValue<List<FunnetVare>>(rs.getString("ai_varer")),
+            lagret = rs.getTimestamp("lagret")?.toInstant(),
         )
     }
 
@@ -84,6 +94,14 @@ class SkanningRepository(
             mapOf("id" to id, "mimeType" to skanning.bilde.mimeType, "data" to skanning.bilde.data),
         )
         return id
+    }
+
+    /** Lagrer brukerens rettede liste på skanningen, til senere måling av AI-kvalitet. */
+    fun markerLagret(id: Long, rettede: List<RettetVare>) {
+        jdbc.update(
+            "UPDATE skanning SET rettede_varer = CAST(:rettede AS jsonb), lagret = now() WHERE id = :id",
+            mapOf("id" to id, "rettede" to json.writeValueAsString(rettede)),
+        )
     }
 
     fun finn(id: Long): Skanning? =

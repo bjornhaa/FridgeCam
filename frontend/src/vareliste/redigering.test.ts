@@ -21,6 +21,10 @@ describe('fraAnalyse', () => {
     expect(varer.filter(erUsikker).map((v) => v.navn)).toEqual(['brunost', 'yoghurt'])
   })
 
+  it('husker plassen i AI-ens liste selv om usikre flyttes først', () => {
+    expect(fraAnalyse(ai).map((v) => v.aiIndeks)).toEqual([1, 3, 0, 2])
+  })
+
   it('holder antall innenfor 1 til maks', () => {
     const varer = fraAnalyse([
       { navn: 'egg', antall: 0, sikkerhet: 'høy', bokser: [] },
@@ -61,7 +65,7 @@ describe('redigering', () => {
   it('ny vare legges nederst uten bokser og uten AI-sikkerhet', () => {
     const { varer: nye, id } = leggTil(varer)
     const ny = nye.at(-1)!
-    expect(ny).toMatchObject({ id, navn: '', antall: 1, sikkerhet: null, bokser: [] })
+    expect(ny).toMatchObject({ id, navn: '', antall: 1, sikkerhet: null, bokser: [], aiIndeks: null })
     expect(leggTil(nye).id).not.toBe(id)
   })
 

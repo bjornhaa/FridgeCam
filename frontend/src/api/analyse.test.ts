@@ -16,11 +16,12 @@ afterEach(() => {
 
 describe('analyserBilde', () => {
   it('sender bildet som multipart-feltet «bilde» og returnerer svaret', async () => {
-    svar(200, { varer: [{ navn: 'melk', antall: 1, sikkerhet: 'høy' }], leverandor: 'fake' })
+    svar(200, { skanningId: 7, varer: [{ navn: 'melk', antall: 1, sikkerhet: 'høy' }], leverandor: 'fake' })
 
     const resultat = await analyserBilde(bilde)
 
     expect(resultat.varer[0].navn).toBe('melk')
+    expect(resultat.skanningId).toBe(7)
     const [url, init] = vi.mocked(fetch).mock.calls[0]
     expect(url).toBe('/api/analyze')
     expect((init?.body as FormData).get('bilde')).toBeInstanceOf(File)
