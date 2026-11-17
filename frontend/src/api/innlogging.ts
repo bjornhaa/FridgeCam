@@ -23,14 +23,11 @@ export type Registrering = {
   navn: string
   epost: string
   passord: string
-  registreringskode: string
 }
 
 const MELDINGER: Record<string, string> = {
   ugyldig_innlogging: 'Feil e-post eller passord.',
   epost_i_bruk: 'Det finnes allerede en konto med denne e-postadressen. Prøv å logge inn i stedet.',
-  ugyldig_registreringskode: 'Registreringskoden stemmer ikke.',
-  registrering_stengt: 'Det er ikke mulig å registrere seg akkurat nå.',
 }
 
 export function loggInn(epost: string, passord: string): Promise<InnloggingSvar> {

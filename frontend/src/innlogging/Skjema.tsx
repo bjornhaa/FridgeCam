@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react'
+import { useState, type InputHTMLAttributes, type ReactNode } from 'react'
 
 /** Felles ramme for innlogging og registrering. */
 export function InnloggingSkall({ tittel, children, bunn }: { tittel: string; children: ReactNode; bunn: ReactNode }) {
@@ -21,6 +21,35 @@ export function Felt({ etikett, ...input }: { etikett: string } & InputHTMLAttri
         {...input}
         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 dark:border-slate-600 dark:bg-slate-800"
       />
+    </label>
+  )
+}
+
+/** Passordfelt med knapp for å vise det som er skrevet, nyttig på mobiltastatur. */
+export function PassordFelt({ etikett, ...input }: { etikett: string } & InputHTMLAttributes<HTMLInputElement>) {
+  const [vis, setVis] = useState(false)
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium">{etikett}</span>
+      <div className="relative">
+        <input
+          {...input}
+          type={vis ? 'text' : 'password'}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          className="w-full rounded-xl border border-slate-300 bg-white py-3 pr-20 pl-4 text-base outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 dark:border-slate-600 dark:bg-slate-800"
+        />
+        <button
+          type="button"
+          onClick={() => setVis(!vis)}
+          aria-pressed={vis}
+          aria-label={vis ? 'Skjul passordet' : 'Vis passordet'}
+          className="absolute inset-y-0 right-0 px-4 text-sm font-medium text-accent"
+        >
+          {vis ? 'Skjul' : 'Vis'}
+        </button>
+      </div>
     </label>
   )
 }

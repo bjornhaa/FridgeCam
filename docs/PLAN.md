@@ -16,7 +16,8 @@ Planen tas steg for steg. Hver fase blir til GitHub-issues etter hvert som den b
 - **Database:** PostgreSQL fra start, Flyway-migreringer
   - Lokalt og i tester: Zonky embedded Postgres (ingen Docker nødvendig)
   - Prod: Fly Postgres (samme hovedversjon som lokalt, Postgres 18), koblet til via `SPRING_DATASOURCE_*`-secrets
-  - Ett migreringstre (`db/migration/`) – vi har ingen prod-historikk å konsolidere
+  - To migreringstrær som i talik-ai: `db/migration/` (prod-historikk) og `db/migration-embedded/`
+    (samlet skjema + testbruker for lokal utvikling), holdt like av `FlywaySkjemaTest`
 - **Auth:** Stateless JWT (som talik-ai)
 - **Frontend:** Vite + React + TypeScript + Tailwind, PWA. Bygges inn i jar-en via `with-frontend`-profil
 - **Drift:** Dockerfile (to-trinns), `fly.toml` (region `arn`), GitHub Actions: test → deploy på push til `main`
@@ -34,6 +35,7 @@ Da slipper vi en datamigrering når flere skal dele kjøleskap.
 - `beholdning_vare` – nåværende varer i husstandens kjøleskap
 - `fast_vare` – varer husstanden alltid vil ha, med ønsket minimumsantall
 - `handleliste_vare` – genererte og manuelt lagt til varer, med avhuking
+- API-nøkkel per husstand (kryptert), fra fase 4
 
 Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
@@ -58,7 +60,8 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 ## Fase 2 – Brukere, husstand og lagring
 - [x] Tabeller: bruker, husstand, husstand_medlem (V1)
 - [x] Innlogging i backend med JWT; husstand opprettes ved registrering (#26)
-- [x] Begrens hvem som kan registrere seg med registreringskode (#27)
+- [x] ~~Registreringskode fra miljøvariabel (#27)~~ – fjernet igjen; erstattet av API-nøkkel per husstand i fase 4
+- [x] Egne Flyway-migreringer for lokal utvikling med testbruker, som i talik-ai
 - [x] Innlogging i frontend (#28)
 - [ ] Navigasjon: Skann / Kjøleskapet / Profil (#29)
 - [ ] Datamodell for skanning, bilde og beholdning (#30)
@@ -78,6 +81,11 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [ ] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert)
   - Maskinen kan gå i dvale (`auto_stop_machines`, `min_machines_running = 0`); kaldstart på noen sekunder er greit
   - Kostnadsvurdering: appmaskin i dvale + Postgres-maskin og volum (bildene ligger i Postgres)
+- [ ] API-nøkkel per husstand, kryptert med AES-256-GCM (som Spotify-tokens i talik-ai), før appen legges ut
+  - Hver husstand betaler for egne AI-kall, så åpen registrering koster ikke appeieren AI-kreditt
+  - Ingen felles nøkkel fra miljøet i prod; uten nøkkel ber appen husstanden legge inn en
+  - Alle medlemmer i husstanden deler nøkkelen
+- [ ] Grense for lagrede bilder per husstand (åpen registrering skal ikke kunne fylle Postgres-volumet)
 - [ ] Deploy fra GitHub Actions ved push til `main`
 - [ ] Backup av Postgres
 
@@ -88,7 +96,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 
 ## Fase 6 – Åpne for andre
 - [ ] Flere AI-leverandører (f.eks. OpenAI) bak samme grensesnitt
-- [ ] Husstand velger leverandør og legger inn egen API-nøkkel (kryptert med AES-256-GCM, som Spotify-tokens i talik-ai)
+- [ ] Husstand velger leverandør (nøkkel per husstand finnes allerede fra fase 4)
 - [ ] Begrensning av antall kall per husstand (kostnadskontroll)
 
 ## Senere / ideer
@@ -104,7 +112,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - **Database:** PostgreSQL fra start (Zonky lokalt, Fly Postgres i prod)
 - **Stack:** Samme som talik-ai (Spring Boot + Spring JDBC + Flyway + JWT, Vite/React)
 - **Brukere:** Husstand med flere brukere; datamodellen støtter det fra start, invitasjon kommer i fase 5
-- **Innlogging:** JWT som `Authorization: Bearer …`, som i talik-ai. Registrering krever kode inntil invitasjoner finnes
+- **Innlogging:** JWT som `Authorization: Bearer …`, som i talik-ai. Registrering er åpen; i stedet for registreringskode legger hver husstand inn egen API-nøkkel før appen legges ut (fase 4)
 - **Bilder:** Lagres i samme størrelse som sendes til AI-en (maks 1500 px, ~170 kB), i Postgres. Boksene passer da til bildet
 - **Beholdning:** En ny skanning erstatter hele beholdningen (bildet er et øyeblikksbilde)
 - **Drift:** Fly.io med maskin som kan gå i dvale
