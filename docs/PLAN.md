@@ -63,7 +63,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [x] ~~Registreringskode fra miljøvariabel (#27)~~ – fjernet igjen; erstattet av API-nøkkel per husstand i fase 4
 - [x] Egne Flyway-migreringer for lokal utvikling med testbruker, som i talik-ai
 - [x] Innlogging i frontend (#28)
-- [ ] Navigasjon: Skann / Kjøleskapet / Profil (#29)
+- [x] Navigasjon: Skann / Kjøleskapet / Profil (#29)
 - [x] Datamodell for skanning, bilde og beholdning (#30)
 - [ ] Redigerbar vareliste etter skanning (#31)
 - [ ] Lagre skanning som beholdning; ny skanning erstatter beholdningen (#32)
