@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { krympBilde, type KrympetBilde } from '../bilde/krympBilde.ts'
 import { analyserBilde, type AnalyseSvar } from '../api/analyse.ts'
 import { ApiFeil } from '../api/klient.ts'
-import { VareListe } from '../VareListe.tsx'
+import { VareListe } from '../vareliste/VareListe.tsx'
+import { fraAnalyse, type RedigerbarVare } from '../vareliste/redigering.ts'
 import { boksStil } from '../bilde/boks.ts'
 import { Side } from '../navigasjon/Side.tsx'
 
@@ -23,9 +24,11 @@ export function SkannSide() {
   const [feil, setFeil] = useState<string | null>(null)
   const [analyserer, setAnalyserer] = useState(false)
   const [analyse, setAnalyse] = useState<AnalyseSvar | null>(null)
-  const [valgtIndeks, setValgtIndeks] = useState<number | null>(null)
+  // Listen brukeren retter (#31). `analyse` beholdes urørt som AI-ens svar.
+  const [varer, setVarer] = useState<RedigerbarVare[]>([])
+  const [valgtId, setValgtId] = useState<string | null>(null)
   const figur = useRef<HTMLElement>(null)
-  const valgtVare = valgtIndeks !== null ? analyse?.varer[valgtIndeks] ?? null : null
+  const valgtVare = varer.find((v) => v.id === valgtId) ?? null
   const kameraInput = useRef<HTMLInputElement>(null)
   const galleriInput = useRef<HTMLInputElement>(null)
 
@@ -49,7 +52,8 @@ export function SkannSide() {
 
     setFeil(null)
     setAnalyse(null)
-    setValgtIndeks(null)
+    setVarer([])
+    setValgtId(null)
     setBehandler(true)
     try {
       setBilde(await krympBilde(fil))
@@ -60,10 +64,10 @@ export function SkannSide() {
     }
   }
 
-  function velgVare(indeks: number | null) {
-    setValgtIndeks(indeks)
-    // Bildet ligger over listen; scroll det i syne så boksen synes.
-    if (indeks !== null) figur.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // Bildet ligger over listen. Det rulles bare i syne når brukeren ber om det,
+  // ellers havner redigeringsfeltene for varen utenfor skjermen.
+  function visIBildet() {
+    figur.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   async function finnVarer() {
@@ -71,7 +75,9 @@ export function SkannSide() {
     setFeil(null)
     setAnalyserer(true)
     try {
-      setAnalyse(await analyserBilde(bilde.fil))
+      const svar = await analyserBilde(bilde.fil)
+      setAnalyse(svar)
+      setVarer(fraAnalyse(svar.varer))
     } catch (err) {
       setFeil(err instanceof ApiFeil ? err.message : 'Noe gikk galt. Prøv igjen.')
     } finally {
@@ -142,7 +148,7 @@ export function SkannSide() {
                           boks.y1 < 60 ? 'top-0' : '-top-0.5 -translate-y-full'
                         }`}
                       >
-                        {valgtVare.navn}
+                        {valgtVare.navn.trim() || 'Ny vare'}
                       </span>
                     )}
                   </div>
@@ -150,13 +156,21 @@ export function SkannSide() {
               </div>
               <figcaption className="px-4 py-2 text-sm text-ink-soft dark:text-slate-400">
                 {valgtVare && valgtVare.bokser.length === 0
-                  ? `AI-en oppga ikke hvor «${valgtVare.navn}» er i bildet.`
+                  ? valgtVare.sikkerhet === null
+                    ? 'Varer du legger til selv, er ikke merket i bildet.'
+                    : `AI-en oppga ikke hvor «${valgtVare.navn}» er i bildet.`
                   : `${formaterStorrelse(bilde.originalStorrelse)} → ${formaterStorrelse(bilde.fil.size)} · ${bilde.bredde} × ${bilde.hoyde} px`}
               </figcaption>
             </figure>
 
             {analyse ? (
-              <VareListe varer={analyse.varer} valgt={valgtIndeks} onVelg={velgVare} />
+              <VareListe
+                varer={varer}
+                valgt={valgtId}
+                onVelg={setValgtId}
+                onEndre={setVarer}
+                onVisIBildet={visIBildet}
+              />
             ) : (
               <button
                 type="button"
