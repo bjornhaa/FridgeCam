@@ -13,7 +13,7 @@ class HusstandTilgang(private val husstander: HusstandRepository) {
 
     /**
      * Husstanden brukerens skanninger og beholdning hører til. Inntil man kan
-     * velge (fase 5) er det den eldste husstanden brukeren er med i.
+     * velge (fase 6) er det den eldste husstanden brukeren er med i.
      */
     fun husstandFor(brukerId: Long): Long =
         husstander.forBruker(brukerId).firstOrNull()?.husstandId
