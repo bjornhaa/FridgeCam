@@ -17,8 +17,9 @@ import java.util.UUID
     properties = [
         // Tilfeldig DB-port så testen ikke kolliderer med en lokalt kjørende app.
         "fridgecam.local-db.port=0",
+        // Uavhengig av AI_PROVIDER i en lokal .env (local-profilen leser den).
+        "fridgecam.ai.provider=fake",
         "fridgecam.ai.fake-forsinkelse=0s",
-        "fridgecam.registrering.kode=${AppTest.REGISTRERINGSKODE}",
     ],
 )
 @ActiveProfiles("local")
@@ -50,13 +51,9 @@ abstract class AppTest {
     protected fun registrer(epost: String = unikEpost(), passord: String = "hemmelig123"): String {
         val respons = postJson(
             "/api/auth/registrer",
-            """{"epost":"$epost","navn":"Test","passord":"$passord","registreringskode":"$REGISTRERINGSKODE"}""",
+            """{"epost":"$epost","navn":"Test","passord":"$passord"}""",
         )
         check(respons.statusCode.value() == 200) { "Registrering feilet: ${respons.body}" }
         return Regex("\"token\":\"([^\"]+)\"").find(respons.body!!)!!.groupValues[1]
-    }
-
-    companion object {
-        const val REGISTRERINGSKODE = "testkode"
     }
 }

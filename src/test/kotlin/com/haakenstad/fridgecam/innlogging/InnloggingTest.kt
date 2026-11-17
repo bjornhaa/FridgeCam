@@ -40,6 +40,14 @@ class InnloggingTest : AppTest() {
     }
 
     @Test
+    fun `testbrukeren fra lokal seed kan logge inn og eier en husstand`() {
+        val respons = loggInn("bjorn@haakenstad.com", "qwer1234")
+
+        assertThat(respons.statusCode.value()).isEqualTo(200)
+        assertThat(respons.body).contains("\"navn\":\"Bjørn\"").contains("\"rolle\":\"EIER\"")
+    }
+
+    @Test
     fun `token fra innlogging gir tilgang til meg`() {
         val epost = unikEpost()
         registrer(epost)
@@ -75,7 +83,7 @@ class InnloggingTest : AppTest() {
 
         val respons = postJson(
             "/api/auth/registrer",
-            """{"epost":"${epost.uppercase()}","navn":"Igjen","passord":"hemmelig123","registreringskode":"$REGISTRERINGSKODE"}""",
+            """{"epost":"${epost.uppercase()}","navn":"Igjen","passord":"hemmelig123"}""",
         )
 
         assertThat(respons.statusCode.value()).isEqualTo(409)
@@ -83,33 +91,12 @@ class InnloggingTest : AppTest() {
         assertThat(antallHusstander()).isEqualTo(husstanderFor)
     }
 
-    @Test
-    fun `feil registreringskode avvises`() {
-        val respons = postJson(
-            "/api/auth/registrer",
-            """{"epost":"${unikEpost()}","navn":"Test","passord":"hemmelig123","registreringskode":"gjetning"}""",
-        )
-
-        assertThat(respons.statusCode.value()).isEqualTo(403)
-        assertThat(respons.body).contains("\"code\":\"ugyldig_registreringskode\"")
-    }
-
-    @Test
-    fun `manglende registreringskode avvises`() {
-        val respons = postJson(
-            "/api/auth/registrer",
-            """{"epost":"${unikEpost()}","navn":"Test","passord":"hemmelig123"}""",
-        )
-
-        assertThat(respons.statusCode.value()).isEqualTo(403)
-        assertThat(respons.body).contains("\"code\":\"ugyldig_registreringskode\"")
-    }
 
     @Test
     fun `for kort passord avvises med norsk melding`() {
         val respons = postJson(
             "/api/auth/registrer",
-            """{"epost":"${unikEpost()}","navn":"Test","passord":"kort","registreringskode":"$REGISTRERINGSKODE"}""",
+            """{"epost":"${unikEpost()}","navn":"Test","passord":"kort"}""",
         )
 
         assertThat(respons.statusCode.value()).isEqualTo(400)
@@ -120,7 +107,7 @@ class InnloggingTest : AppTest() {
     fun `passord over 72 byte avvises selv om det er under 72 tegn`() {
         val respons = postJson(
             "/api/auth/registrer",
-            """{"epost":"${unikEpost()}","navn":"Test","passord":"${"æ".repeat(40)}","registreringskode":"$REGISTRERINGSKODE"}""",
+            """{"epost":"${unikEpost()}","navn":"Test","passord":"${"æ".repeat(40)}"}""",
         )
 
         assertThat(respons.statusCode.value()).isEqualTo(400)

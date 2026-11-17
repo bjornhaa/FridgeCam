@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
 import { useInnlogging } from '../innlogging/Innlogging.tsx'
-import { Feilmelding, feilmeldingFra, Felt, InnloggingSkall, SendKnapp } from '../innlogging/Skjema.tsx'
+import { Feilmelding, feilmeldingFra, Felt, InnloggingSkall, PassordFelt, SendKnapp } from '../innlogging/Skjema.tsx'
 
 export function LoggInnSide() {
   const { status, loggInn } = useInnlogging()
@@ -53,9 +53,8 @@ export function LoggInnSide() {
           value={epost}
           onChange={(e) => setEpost(e.target.value)}
         />
-        <Felt
+        <PassordFelt
           etikett="Passord"
-          type="password"
           autoComplete="current-password"
           required
           value={passord}

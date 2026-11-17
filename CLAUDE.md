@@ -51,6 +51,16 @@ cd frontend && npm test                    # Vitest
 - Uten profil (prod): `SPRING_DATASOURCE_*`, `AI_PROVIDER` og `JWT_SECRET` må settes; appen stopper ellers.
 - Gjør aldri `local` til standardprofil: prod ville da stille brukt en flyktig database.
 
+### Migreringer (som i talik-ai)
+- To trær: `db/migration/` er prod-historikken (`V1`, `V2`, …). `db/migration-embedded/` brukes av
+  `local` (og testene som starter appen): `V1__init.sql` er det samlede skjemaet, resten er testdata.
+- **Ved skjemaendring: endre begge.** Ny `V{n}__….sql` i `db/migration/`, og oppdater
+  `db/migration-embedded/V1__init.sql`. Legg ikke versjonerte skjemaendringer i embedded-treet.
+- `FlywayFilnavnTest` (navn, duplikater, hull) og `FlywaySkjemaTest` (kjører begge trærne og
+  sammenligner tabeller, kolonner, constraints og indekser) passer på at de ikke glir fra hverandre.
+- Testbruker lokalt (`V2__dev_seed.sql`, som i talik-ai): `bjorn@haakenstad.com` / `qwer1234`,
+  eier av husstanden «Hjemme».
+
 ### Innlogging (`innlogging/`)
 - Stateless JWT som i talik-ai: `Authorization: Bearer …`, HS256 via `jjwt`, levetid 30 dager.
   Tokenet har bare bruker-id (`sub`); hentes i controllere med `@AuthenticationPrincipal InnloggetBruker`.
@@ -58,7 +68,8 @@ cd frontend && npm test                    # Vitest
   husstand («Hjemme») med brukeren som `EIER`, i samme transaksjon.
 - Alt under `/api/` krever innlogging (unntatt de to over), og avvisning gir 401 `ikke_innlogget`
   fra `SecurityConfig`. `/actuator/health`, frontenden og dype lenker er åpne.
-- Registrering krever `FRIDGECAM_REGISTRERINGSKODE`; uten satt kode er registrering stengt.
+- Registrering er åpen. Før appen legges ut på Fly skal hver husstand legge inn egen AI-nøkkel
+  (kryptert i databasen), så fremmede ikke bruker appeierens kreditt (fase 4).
   `JWT_SECRET` (minst 32 tegn) kreves i prod; `local` har en utviklingsverdi.
 - Frontend: `api/klient.ts` (`apiKall`) legger på token fra `api/token.ts` (localStorage) og gjør
   `{code, message}` om til `ApiFeil` med norsk melding. 401 *med* token = utlogget (lyttere varsles);
@@ -78,8 +89,8 @@ cd frontend && npm test                    # Vitest
   normalisert 0–1000 og oversatt til `Boks(x1,y1,x2,y2)`.
 - Feilkoder via `ApiException` → `{code, message}`: `rate_limit`, `ai_utilgjengelig`,
   `ai_avviste`, `ai_feil`, `bilde_mangler`, `ugyldig_bildeformat`, `bilde_for_stort`; for innlogging
-  `ikke_innlogget`, `ugyldig_innlogging`, `epost_i_bruk`, `ugyldig_registreringskode`,
-  `registrering_stengt`, og `ugyldig_foresporsel` for valideringsfeil (meldingen er fra feltet).
+  `ikke_innlogget`, `ugyldig_innlogging`, `epost_i_bruk`, og
+  `ugyldig_foresporsel` for valideringsfeil (meldingen er fra feltet).
   Frontend (`frontend/src/api/analyse.ts`) har norske meldinger for hver kode.
 - `GlobalExceptionHandler` er avgrenset med `basePackages`; ellers fanger den Springs 404 for
   statiske filer og dype lenker gir 500. `MaxUploadSizeExceededException` håndteres i egen,

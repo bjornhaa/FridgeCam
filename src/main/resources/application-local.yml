@@ -1,6 +1,10 @@
 # Profil 'local' – aktiveres som standard av spring-boot-maven-plugin (mvn spring-boot:run).
 # DataSource leveres av LocalDataSourceConfig (Zonky embedded Postgres, flyktig).
 spring:
+  flyway:
+    # Samlet skjema + testbruker (bjorn@haakenstad.com / qwer1234), som i talik-ai.
+    # Prod bruker db/migration/ (satt i application.yml).
+    locations: classpath:db/migration-embedded
   config:
     # Leser API-nøkler o.l. fra .env i prosjektmappen hvis den finnes (se .env.example).
     # Bare lokalt: prod bruker Fly secrets. Miljøvariabler vinner over .env.

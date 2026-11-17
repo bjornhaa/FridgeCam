@@ -16,7 +16,6 @@ data class RegistrerForesporsel(
     // BCrypt bruker bare de første 72 bytene; InnloggingService sjekker bytene.
     @field:Size(min = 8, max = 72, message = "Passordet må ha mellom 8 og 72 tegn.")
     val passord: String = "",
-    val registreringskode: String = "",
 )
 
 data class LoggInnForesporsel(

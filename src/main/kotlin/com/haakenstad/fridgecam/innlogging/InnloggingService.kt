@@ -17,7 +17,6 @@ class InnloggingService(
     private val husstander: HusstandRepository,
     private val passordKoder: PasswordEncoder,
     private val jwt: JwtService,
-    private val registreringskode: Registreringskode,
 ) {
 
     /**
@@ -29,8 +28,6 @@ class InnloggingService(
     /** Oppretter bruker og en husstand med brukeren som eier, i samme transaksjon. */
     @Transactional
     fun registrer(foresporsel: RegistrerForesporsel): InnloggingSvar {
-        // Koden først, så man ikke kan sjekke hvilke e-poster som finnes uten den.
-        registreringskode.sjekk(foresporsel.registreringskode)
         if (foresporsel.passord.toByteArray(Charsets.UTF_8).size > MAKS_PASSORD_BYTES) {
             throw ApiException(HttpStatus.BAD_REQUEST, "ugyldig_foresporsel", "Passordet er for langt.")
         }

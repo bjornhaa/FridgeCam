@@ -1,16 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useSearchParams } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { useInnlogging } from '../innlogging/Innlogging.tsx'
-import { Feilmelding, feilmeldingFra, Felt, InnloggingSkall, SendKnapp } from '../innlogging/Skjema.tsx'
+import { Feilmelding, feilmeldingFra, Felt, InnloggingSkall, PassordFelt, SendKnapp } from '../innlogging/Skjema.tsx'
 
 export function RegistrerSide() {
   const { status, registrer } = useInnlogging()
-  // Koden kan deles som lenke: /registrer?kode=…
-  const [parametre] = useSearchParams()
   const [navn, setNavn] = useState('')
   const [epost, setEpost] = useState('')
   const [passord, setPassord] = useState('')
-  const [kode, setKode] = useState(parametre.get('kode') ?? '')
   const [sender, setSender] = useState(false)
   const [feil, setFeil] = useState<string | null>(null)
 
@@ -21,7 +18,7 @@ export function RegistrerSide() {
     setFeil(null)
     setSender(true)
     try {
-      await registrer({ navn: navn.trim(), epost: epost.trim(), passord, registreringskode: kode.trim() })
+      await registrer({ navn: navn.trim(), epost: epost.trim(), passord })
     } catch (err) {
       setFeil(feilmeldingFra(err))
       setSender(false)
@@ -57,25 +54,14 @@ export function RegistrerSide() {
           value={epost}
           onChange={(e) => setEpost(e.target.value)}
         />
-        <Felt
+        <PassordFelt
           etikett="Passord (minst 8 tegn)"
-          type="password"
           autoComplete="new-password"
           required
           minLength={8}
           maxLength={72}
           value={passord}
           onChange={(e) => setPassord(e.target.value)}
-        />
-        <Felt
-          etikett="Registreringskode"
-          autoComplete="off"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          required
-          value={kode}
-          onChange={(e) => setKode(e.target.value)}
         />
         {feil && <Feilmelding>{feil}</Feilmelding>}
         <SendKnapp sender={sender}>{sender ? 'Registrerer …' : 'Registrer deg'}</SendKnapp>
