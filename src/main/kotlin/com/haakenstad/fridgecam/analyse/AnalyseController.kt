@@ -1,6 +1,9 @@
 package com.haakenstad.fridgecam.analyse
 
 import com.haakenstad.fridgecam.common.ApiException
+import com.haakenstad.fridgecam.innlogging.InnloggetBruker
+import com.haakenstad.fridgecam.skanning.SkanningService
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -12,6 +15,8 @@ import org.springframework.web.multipart.MultipartFile
 import java.util.Locale
 
 data class AnalyseSvar(
+    /** Skanningen er lagret; den rettede listen sendes til `/api/skanninger/{id}/beholdning`. */
+    val skanningId: Long,
     val varer: List<FunnetVare>,
     val leverandor: String,
 )
@@ -20,6 +25,7 @@ data class AnalyseSvar(
 @RequestMapping("/api")
 class AnalyseController(
     private val visionProvider: VisionProvider,
+    private val skanninger: SkanningService,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -30,7 +36,10 @@ class AnalyseController(
      * det er typisk noen hundre kB.
      */
     @PostMapping("/analyze", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    fun analyser(@RequestPart("bilde") bilde: MultipartFile): AnalyseSvar {
+    fun analyser(
+        @AuthenticationPrincipal bruker: InnloggetBruker,
+        @RequestPart("bilde") bilde: MultipartFile,
+    ): AnalyseSvar {
         if (bilde.isEmpty) {
             throw ApiException(HttpStatus.BAD_REQUEST, "bilde_mangler", "Bildet er tomt.")
         }
@@ -43,13 +52,13 @@ class AnalyseController(
             )
 
         val start = System.nanoTime()
-        val resultat = visionProvider.analyser(data, mimeType)
+        val resultat = skanninger.analyser(bruker.brukerId, data, mimeType)
         log.info(
             "Analyse: {} kB {}, {} varer fra {} på {} ms{}",
             data.size / 1024, mimeType, resultat.varer.size, visionProvider.navn,
             (System.nanoTime() - start) / 1_000_000, beskriv(resultat.forbruk),
         )
-        return AnalyseSvar(resultat.varer, visionProvider.navn)
+        return AnalyseSvar(resultat.skanningId, resultat.varer, visionProvider.navn)
     }
 
     private fun beskriv(forbruk: Tokenforbruk?): String {

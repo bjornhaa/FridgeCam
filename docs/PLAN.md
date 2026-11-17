@@ -66,8 +66,8 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [x] Navigasjon: Skann / Kjøleskapet / Profil (#29)
 - [x] Datamodell for skanning, bilde og beholdning (#30)
 - [x] Redigerbar vareliste etter skanning (#31)
-- [ ] Lagre skanning som beholdning; ny skanning erstatter beholdningen (#32)
-- [ ] Vis kjøleskapet med siste bilde og bokser (#33)
+- [x] Lagre skanning som beholdning; ny skanning erstatter beholdningen (#32)
+- [x] Vis kjøleskapet med siste bilde og bokser (#33)
 
 ## Fase 3 – Handleliste
 - [ ] Normalisering av varenavn (f.eks. «lettmelk» ≈ «melk»), så beholdning kan sammenlignes med faste varer

@@ -2,9 +2,11 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { krympBilde, type KrympetBilde } from '../bilde/krympBilde.ts'
 import { analyserBilde, type AnalyseSvar } from '../api/analyse.ts'
 import { ApiFeil } from '../api/klient.ts'
+import { lagreIKjoleskapet } from '../api/kjoleskap.ts'
+import { useNavigate } from 'react-router'
 import { VareListe } from '../vareliste/VareListe.tsx'
 import { fraAnalyse, type RedigerbarVare } from '../vareliste/redigering.ts'
-import { boksStil } from '../bilde/boks.ts'
+import { BildeMedBokser } from '../bilde/BildeMedBokser.tsx'
 import { Side } from '../navigasjon/Side.tsx'
 
 /**
@@ -27,6 +29,10 @@ export function SkannSide() {
   // Listen brukeren retter (#31). `analyse` beholdes urørt som AI-ens svar.
   const [varer, setVarer] = useState<RedigerbarVare[]>([])
   const [valgtId, setValgtId] = useState<string | null>(null)
+  const [lagrer, setLagrer] = useState(false)
+  // Vises ved knappen, ikke øverst: brukeren står nederst i listen når den trykker.
+  const [lagreFeil, setLagreFeil] = useState<string | null>(null)
+  const navigate = useNavigate()
   const figur = useRef<HTMLElement>(null)
   const valgtVare = varer.find((v) => v.id === valgtId) ?? null
   const kameraInput = useRef<HTMLInputElement>(null)
@@ -68,6 +74,19 @@ export function SkannSide() {
   // ellers havner redigeringsfeltene for varen utenfor skjermen.
   function visIBildet() {
     figur.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  async function lagre() {
+    if (!analyse) return
+    setLagreFeil(null)
+    setLagrer(true)
+    try {
+      await lagreIKjoleskapet(analyse.skanningId, varer)
+      navigate('/kjoleskap')
+    } catch (err) {
+      setLagreFeil(err instanceof ApiFeil ? err.message : 'Noe gikk galt. Prøv igjen.')
+      setLagrer(false)
+    }
   }
 
   async function finnVarer() {
@@ -127,33 +146,11 @@ export function SkannSide() {
               ref={figur}
               className="scroll-mt-4 overflow-hidden rounded-2xl bg-frost-deep shadow-sm dark:bg-slate-800"
             >
-              {/* Beholderen er nøyaktig like stor som bildet, så boksene (i prosent) treffer. */}
-              <div className="relative mx-auto w-fit">
-                <img
-                  src={visningsUrl}
-                  alt="Bilde av kjøleskapet"
-                  className="block max-h-[60dvh] max-w-full"
-                />
-                {valgtVare?.bokser.map((boks, i) => (
-                  <div
-                    key={i}
-                    aria-hidden="true"
-                    className="pointer-events-none absolute rounded-md border-[3px] border-amber-400 shadow-[0_0_0_2px_rgba(0,0,0,0.55)]"
-                    style={boksStil(boks)}
-                  >
-                    {i === 0 && (
-                      // Ligger boksen helt øverst, legges lappen inni boksen så den ikke kuttes.
-                      <span
-                        className={`absolute left-0 rounded bg-amber-400 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-black first-letter:uppercase ${
-                          boks.y1 < 60 ? 'top-0' : '-top-0.5 -translate-y-full'
-                        }`}
-                      >
-                        {valgtVare.navn.trim() || 'Ny vare'}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <BildeMedBokser
+                src={visningsUrl}
+                alt="Bilde av kjøleskapet"
+                valgte={valgtVare ? [{ bokser: valgtVare.bokser, etikett: valgtVare.navn.trim() || 'Ny vare' }] : []}
+              />
               <figcaption className="px-4 py-2 text-sm text-ink-soft dark:text-slate-400">
                 {valgtVare && valgtVare.bokser.length === 0
                   ? valgtVare.sikkerhet === null
@@ -171,7 +168,26 @@ export function SkannSide() {
                 onEndre={setVarer}
                 onVisIBildet={visIBildet}
               />
-            ) : (
+            ) : null}
+            {analyse && (
+              <>
+                {lagreFeil && (
+                  <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-red-800 dark:bg-red-950 dark:text-red-200">
+                    {lagreFeil}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={lagre}
+                  disabled={lagrer}
+                  className="flex items-center justify-center gap-3 rounded-xl bg-accent px-5 py-4 text-lg font-medium text-white active:bg-accent-hover disabled:opacity-70"
+                >
+                  {lagrer && <span className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
+                  {lagrer ? 'Lagrer …' : 'Lagre i kjøleskapet'}
+                </button>
+              </>
+            )}
+            {!analyse && (
               <button
                 type="button"
                 onClick={finnVarer}
@@ -188,7 +204,7 @@ export function SkannSide() {
             <button
               type="button"
               onClick={() => kameraInput.current?.click()}
-              disabled={analyserer}
+              disabled={analyserer || lagrer}
               className="rounded-xl border border-accent disabled:opacity-50 px-5 py-3 font-medium text-accent active:bg-frost-deep dark:active:bg-slate-800"
             >
               Ta nytt bilde

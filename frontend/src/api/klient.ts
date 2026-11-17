@@ -38,6 +38,18 @@ export async function apiKall<T>(
   init: RequestInit = {},
   meldinger: Record<string, string> = {},
 ): Promise<T> {
+  const respons = await send(sti, init, meldinger)
+  // 204 No Content (f.eks. lagring) har ingen body å lese.
+  if (respons.status === 204) return undefined as T
+  return await respons.json() as T
+}
+
+/** Som [apiKall], men for binære svar som bilder. Et `<img src>` kan ikke sende tokenet selv. */
+export async function apiBlob(sti: string, init: RequestInit = {}): Promise<Blob> {
+  return await (await send(sti, init, {})).blob()
+}
+
+async function send(sti: string, init: RequestInit, meldinger: Record<string, string>): Promise<Response> {
   const token = hentToken()
   const headers = new Headers(init.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
@@ -65,7 +77,7 @@ export async function apiKall<T>(
       meldinger[code] ?? FELLES_MELDINGER[code] ?? feil?.message ?? 'Noe gikk galt. Prøv igjen.',
     )
   }
-  return await respons.json() as T
+  return respons
 }
 
 /** JSON-body til `apiKall`. */

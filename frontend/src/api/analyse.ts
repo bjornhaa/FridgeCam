@@ -19,6 +19,8 @@ export type FunnetVare = {
 }
 
 export type AnalyseSvar = {
+  /** Skanningen er lagret i backend; den rettede listen lagres mot denne id-en. */
+  skanningId: number
   varer: FunnetVare[]
   leverandor: string
 }
@@ -48,6 +50,7 @@ function normaliser(data: unknown): AnalyseSvar {
   const svar = (data ?? {}) as Partial<AnalyseSvar>
   const varer = Array.isArray(svar.varer) ? svar.varer : []
   return {
+    skanningId: typeof svar.skanningId === 'number' ? svar.skanningId : 0,
     leverandor: typeof svar.leverandor === 'string' ? svar.leverandor : 'ukjent',
     varer: varer.map((v) => ({
       ...v,

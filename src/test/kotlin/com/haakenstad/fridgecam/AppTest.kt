@@ -1,9 +1,12 @@
 package com.haakenstad.fridgecam
 
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.ResponseEntity
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.web.servlet.MockMvc
 import org.springframework.web.client.RestClient
 import java.util.UUID
 
@@ -23,7 +26,12 @@ import java.util.UUID
     ],
 )
 @ActiveProfiles("local")
+@AutoConfigureMockMvc
 abstract class AppTest {
+
+    /** For tester som vil bruke MockMvc mot hele appen (med ekte sikkerhet og database). */
+    @Autowired
+    protected lateinit var mvc: MockMvc
 
     @LocalServerPort
     protected var port: Int = 0

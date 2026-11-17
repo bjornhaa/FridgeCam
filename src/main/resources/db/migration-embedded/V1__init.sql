@@ -55,7 +55,11 @@ CREATE TABLE skanning (
     kostnad_usd NUMERIC(12, 6),
     -- AI-ens opprinnelige vareliste (navn, antall, sikkerhet, bokser), urørt.
     -- Sammen med beholdningen gir den forskjellen brukeren rettet.
-    ai_varer    JSONB         NOT NULL
+    ai_varer    JSONB         NOT NULL,
+    -- Brukerens rettede liste og når den ble lagret som beholdning (V3).
+    -- Null = skanningen ble aldri lagret.
+    rettede_varer JSONB,
+    lagret        TIMESTAMPTZ
 );
 
 -- «Siste skanning for husstanden».
