@@ -32,8 +32,9 @@ Da slipper vi en datamigrering når flere skal dele kjøleskap.
 - `husstand_medlem` – kobler bruker ↔ husstand (rolle: eier / medlem)
 - `skanning` – ett bilde-opptak (tidspunkt, hvem, AI-leverandør/modell, tokens/kostnad, AI-ens opprinnelige liste)
 - `skanning_bilde` – bildet som ble sendt til AI-en (maks 1500 px, ~170 kB), egen tabell
-- `beholdning_vare` – nåværende varer i husstandens kjøleskap
-- `fast_vare` – varer husstanden alltid vil ha, med ønsket minimumsantall
+- `kjoleskap` – et kjøleskap i husstanden (hjemme, hytta …), fra fase 4
+- `beholdning_vare` – nåværende varer i et kjøleskap
+- `fast_vare` – varer som alltid skal være i et kjøleskap, med ønsket minimumsantall
 - `handleliste_vare` – genererte og manuelt lagt til varer, med avhuking
 - API-nøkkel per husstand (kryptert), fra fase 3
 
@@ -85,24 +86,35 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
 - [ ] Backup av Postgres (som i talik-ai, med sjekk av at backupen er fersk og kan gjenopprettes) (#46)
 - [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
 
-## Fase 4 – Handleliste
+## Fase 4 – Flere kjøleskap
+En husstand kan ha flere kjøleskap, f.eks. hjemme, på fjellhytta og på hytta på Sørlandet.
+Man husker sjelden hva som står igjen i hvert av dem; appen skal vise det hjemmefra.
+Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger annet enn hjemme).
+- [ ] `kjoleskap` som egen tabell under husstanden (navn); skanning og beholdning hører til et kjøleskap
+  - Eksisterende skanninger og beholdning flyttes til ett standard kjøleskap per husstand, i samme migrering
+- [ ] Velge kjøleskap når man skanner (det sist brukte er forhåndsvalgt)
+- [ ] «Kjøleskapet»-fanen viser ett kjøleskap om gangen, med enkel veksling og «sist skannet» for hvert
+- [ ] Legge til, gi nytt navn og slette kjøleskap (Profil)
+- [ ] En ny skanning erstatter beholdningen i det valgte kjøleskapet, ikke i de andre
+
+## Fase 5 – Handleliste
 - [ ] Undersøke Odas offisielle MCP-server (`https://oda.com/mcp`): vilkår for bruk fra en tredjepartsapp,
   og hva produktsøk, kategoritre og kjøpshistorikk gir i praksis (prøves fra Claude Code med egen Oda-konto)
 - [ ] Normalisering av varenavn (f.eks. «lettmelk» ≈ «melk»), så beholdning kan sammenlignes med faste varer
   - Mulig hjelp fra Odas produkter og kategoritre
-- [ ] Administrere faste varer (med ønsket minimumsantall); kanskje forslag fra kjøpshistorikk hos Oda
-- [ ] Generere handleliste = faste varer − beholdning
+- [ ] Administrere faste varer per kjøleskap (med ønsket minimumsantall); kanskje forslag fra kjøpshistorikk hos Oda
+- [ ] Generere handleliste = faste varer − beholdning, for ett kjøleskap (f.eks. før man drar på hytta)
 - [ ] Manuelt legge til / huke av varer i handlelisten
 - [ ] Dele handlelisten (kopiere tekst / del-knapp via Web Share API)
 - [ ] Kanskje: legge handlelisten i Oda-handlekurven eller en lagret liste (betaling skjer på oda.com)
 - [ ] Offline-visning av handlelisten (service worker fra fase 3)
 
-## Fase 5 – Flere brukere i husstanden
+## Fase 6 – Flere brukere i husstanden
 - [ ] Invitere andre til husstanden (invitasjonslenke/kode)
 - [ ] Felles handleliste som oppdateres for alle medlemmer
 - [ ] Forlate / fjerne medlem
 
-## Fase 6 – Åpne for andre
+## Fase 7 – Åpne for andre
 - [ ] Flere AI-leverandører (f.eks. OpenAI) bak samme grensesnitt
 - [ ] Husstand velger leverandør (nøkkel per husstand finnes allerede fra fase 3)
 - [ ] Begrensning av antall kall per husstand (kostnadskontroll)
@@ -120,8 +132,9 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
 - **Hosting:** Fly.io
 - **Database:** PostgreSQL fra start (Zonky lokalt, Fly Postgres i prod)
 - **Stack:** Samme som talik-ai (Spring Boot + Spring JDBC + Flyway + JWT, Vite/React)
-- **Brukere:** Husstand med flere brukere; datamodellen støtter det fra start, invitasjon kommer i fase 5
+- **Brukere:** Husstand med flere brukere; datamodellen støtter det fra start, invitasjon kommer i fase 6
 - **Innlogging:** JWT som `Authorization: Bearer …`, som i talik-ai. Registrering er åpen; i stedet for registreringskode legger hver husstand inn egen API-nøkkel før appen legges ut (fase 3)
 - **Bilder:** Lagres i samme størrelse som sendes til AI-en (maks 1500 px, ~170 kB), i Postgres. Boksene passer da til bildet
-- **Beholdning:** En ny skanning erstatter hele beholdningen (bildet er et øyeblikksbilde)
+- **Beholdning:** En ny skanning erstatter hele beholdningen i kjøleskapet som ble skannet (bildet er et øyeblikksbilde)
+- **Kjøleskap:** En husstand kan ha flere kjøleskap (hjem og hytter); skanning, beholdning, faste varer og handleliste hører til et kjøleskap (fase 4)
 - **Drift:** Fly.io med maskin som kan gå i dvale
