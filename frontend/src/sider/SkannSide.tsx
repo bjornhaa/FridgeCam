@@ -2,9 +2,9 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { krympBilde, type KrympetBilde } from '../bilde/krympBilde.ts'
 import { analyserBilde, type AnalyseSvar } from '../api/analyse.ts'
 import { ApiFeil } from '../api/klient.ts'
-import { useBruker, useInnlogging } from '../innlogging/Innlogging.tsx'
 import { VareListe } from '../VareListe.tsx'
 import { boksStil } from '../bilde/boks.ts'
+import { Side } from '../navigasjon/Side.tsx'
 
 /**
  * Kameraflyten: ta bilde, krymp det (#6), se forhåndsvisning, ta nytt.
@@ -17,8 +17,6 @@ import { boksStil } from '../bilde/boks.ts'
  * Da synes det med en gang hvis orienteringen har blitt feil.
  */
 export function SkannSide() {
-  const bruker = useBruker()
-  const { loggUt } = useInnlogging()
   const [bilde, setBilde] = useState<KrympetBilde | null>(null)
   const [visningsUrl, setVisningsUrl] = useState<string | null>(null)
   const [behandler, setBehandler] = useState(false)
@@ -82,15 +80,9 @@ export function SkannSide() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <Side>
       <header className="mb-6">
-        {/* Midlertidig plass for utlogging; flyttes til Profil-fanen (#29). */}
-        <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight">FridgeCam</h1>
-          <button type="button" onClick={loggUt} className="text-sm text-accent underline underline-offset-4">
-            Logg ut {bruker.navn}
-          </button>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">FridgeCam</h1>
         <p className="text-ink-soft dark:text-slate-400">
           Ta bilde av kjøleskapet, så finner vi ut hva som er der.
         </p>
@@ -208,7 +200,7 @@ export function SkannSide() {
           </div>
         )}
       </main>
-    </div>
+    </Side>
   )
 }
 

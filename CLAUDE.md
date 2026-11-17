@@ -31,7 +31,9 @@ cd frontend && npm test                    # Vitest
 ## Arbeidsflyt
 
 - Én gren per issue (eller to små issues sammen), PR med `Closes #N`, CI må være grønn.
-  Grener slettes automatisk ved merge. Stablede PR-er: base = forrige gren; flytt til `main` før merge.
+  Grener slettes automatisk ved merge. **Merge PR-en (når CI er grønn og brukeren har godkjent)
+  før neste issue startes**; unngå stabler av åpne PR-er. Må det likevel stables: base = forrige
+  gren, og flytt til `main` før merge.
 - **Før commit/PR: la brukeren teste på mobil.** Start Vite og en tunnel
   (`cloudflared tunnel --url http://localhost:5173`), gi brukeren adressen, vent på
   «det fungerer». Tunnel-DNS kan bruke litt tid; sjekk med `dig @1.1.1.1` + `curl --resolve`.
