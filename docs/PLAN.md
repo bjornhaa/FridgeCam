@@ -64,7 +64,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 - [x] Egne Flyway-migreringer for lokal utvikling med testbruker, som i talik-ai
 - [x] Innlogging i frontend (#28)
 - [ ] Navigasjon: Skann / Kjøleskapet / Profil (#29)
-- [ ] Datamodell for skanning, bilde og beholdning (#30)
+- [x] Datamodell for skanning, bilde og beholdning (#30)
 - [ ] Redigerbar vareliste etter skanning (#31)
 - [ ] Lagre skanning som beholdning; ny skanning erstatter beholdningen (#32)
 - [ ] Vis kjøleskapet med siste bilde og bokser (#33)

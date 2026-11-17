@@ -108,7 +108,10 @@ cd frontend && npm test                    # Vitest
 
 ## Konvensjoner
 - Ingen JPA: `NamedParameterJdbcTemplate`, `BIGINT GENERATED ALWAYS AS IDENTITY`, `INSERT … RETURNING`.
+- JSON i Postgres (`JSONB`): skriv med appens `JsonMapper` og `CAST(:x AS jsonb)`, les med `json.readValue`.
+  `skanning.ai_varer` er AI-ens urørte svar; `beholdning_vare` er den rettede listen.
 - Norske kolonnenavn og norske domenenavn i Kotlin (`FunnetVare`, `Sikkerhet`, `Boks`).
 - Tester: `@WebMvcTest` for controllere, `AppTest` som base for tester mot hele appen (deler
-  kontekst og database, så bruk `unikEpost()`), Zonky for databasetester, JDK `HttpServer` som falsk
+  kontekst og database, så bruk `unikEpost()`), `DatabaseTest` for repositories (ekte
+  transaksjoner; `nyEier()` gir egen bruker og husstand per test), Zonky for databasetester, JDK `HttpServer` som falsk
   API-server for AI-leverandørene. Frontend: Vitest med `vi.stubGlobal('fetch', …)`.
