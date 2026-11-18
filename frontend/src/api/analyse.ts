@@ -33,6 +33,9 @@ const MELDINGER: Record<string, string> = {
   ai_utilgjengelig: 'AI-tjenesten er utilgjengelig akkurat nå. Prøv igjen om litt.',
   ai_avviste: 'AI-en kunne ikke analysere dette bildet. Prøv et annet bilde.',
   ai_feil: 'Noe gikk galt hos AI-tjenesten. Prøv igjen.',
+  mangler_ai_nokkel: 'Husstanden har ikke lagt inn en AI-nøkkel ennå.',
+  ugyldig_ai_nokkel: 'AI-tjenesten godtok ikke nøkkelen. Sjekk den under Profil.',
+  ai_mangler_kreditt: 'Det er tomt for kreditt på AI-kontoen. Fyll på hos leverandøren.',
 }
 
 export async function analyserBilde(bilde: File, signal?: AbortSignal): Promise<AnalyseSvar> {

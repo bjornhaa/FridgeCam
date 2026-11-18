@@ -1,5 +1,6 @@
 import { useBruker, useInnlogging } from '../innlogging/Innlogging.tsx'
 import { Side } from '../navigasjon/Side.tsx'
+import { AiNokkelKort } from '../ainokkel/AiNokkelKort.tsx'
 
 export function ProfilSide() {
   const bruker = useBruker()
@@ -17,6 +18,7 @@ export function ProfilSide() {
           </Rad>
         ))}
       </dl>
+      <AiNokkelKort />
       <button
         type="button"
         onClick={loggUt}

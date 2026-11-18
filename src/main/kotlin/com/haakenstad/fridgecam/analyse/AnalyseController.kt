@@ -23,10 +23,7 @@ data class AnalyseSvar(
 
 @RestController
 @RequestMapping("/api")
-class AnalyseController(
-    private val visionProvider: VisionProvider,
-    private val skanninger: SkanningService,
-) {
+class AnalyseController(private val skanninger: SkanningService) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -55,10 +52,10 @@ class AnalyseController(
         val resultat = skanninger.analyser(bruker.brukerId, data, mimeType)
         log.info(
             "Analyse: {} kB {}, {} varer fra {} på {} ms{}",
-            data.size / 1024, mimeType, resultat.varer.size, visionProvider.navn,
+            data.size / 1024, mimeType, resultat.varer.size, resultat.leverandor,
             (System.nanoTime() - start) / 1_000_000, beskriv(resultat.forbruk),
         )
-        return AnalyseSvar(resultat.skanningId, resultat.varer, visionProvider.navn)
+        return AnalyseSvar(resultat.skanningId, resultat.varer, resultat.leverandor)
     }
 
     private fun beskriv(forbruk: Tokenforbruk?): String {

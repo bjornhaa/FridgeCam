@@ -23,6 +23,12 @@ fridgecam:
     provider: ${AI_PROVIDER:fake}
     # Så lastevisningen i appen synes, som med et ekte AI-kall.
     fake-forsinkelse: 1500ms
+    # Reserve når husstanden ikke har lagt inn egen nøkkel. Bare lokalt (sjekkes også i koden).
+    anthropic-api-key: ${ANTHROPIC_API_KEY:}
+    gemini-api-key: ${GEMINI_API_KEY:}
+    # Bare for lokal utvikling: 32 nullbyte. Avvises utenfor local-profilen.
+    # Det som krypteres med den, er ikke beskyttet; den flyktige databasen forsvinner uansett.
+    nokkel-kryptering: ${FRIDGECAM_NOKKEL_KRYPTERING:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=}
 
 logging:
   level:

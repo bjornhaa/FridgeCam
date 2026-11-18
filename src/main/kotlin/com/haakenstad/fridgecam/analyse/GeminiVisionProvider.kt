@@ -37,13 +37,15 @@ class GeminiVisionProvider(
 
     override val navn = "gemini/$modell (thinking ${innsats.name.lowercase()})"
 
+    private val httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+
     private val http = RestClient.builder()
         .baseUrl(baseUrl)
-        .requestFactory(
-            JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build())
-                .apply { setReadTimeout(timeout) },
-        )
+        .requestFactory(JdkClientHttpRequestFactory(httpClient).apply { setReadTimeout(timeout) })
         .build()
+
+    /** Frigjør HTTP-klienten; kalles etter hvert kall (se [VisionProviderFabrikk]). */
+    override fun close() = httpClient.close()
 
     override fun analyser(bilde: ByteArray, mimeType: String): Analyseresultat {
         val svar = try {
@@ -135,8 +137,8 @@ class GeminiVisionProvider(
                 ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ai_utilgjengelig", "AI-tjenesten er utilgjengelig akkurat nå.")
             }
             kode == 401 || kode == 403 -> {
-                log.error("Gemini avviste API-nøkkelen ({}). Sjekk GEMINI_API_KEY.", kode)
-                aiFeil(null)
+                log.warn("Gemini avviste husstandens API-nøkkel ({})", kode)
+                AiNokkelFeil.ugyldig()
             }
             else -> {
                 log.error("Feil fra Gemini ({}): {}", kode, e.responseBodyAsString.take(500))

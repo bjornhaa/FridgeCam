@@ -4,6 +4,7 @@ import com.anthropic.client.AnthropicClient
 import com.anthropic.core.JsonValue
 import com.anthropic.errors.AnthropicIoException
 import com.anthropic.errors.AnthropicServiceException
+import com.anthropic.errors.BadRequestException
 import com.anthropic.errors.InternalServerException
 import com.anthropic.errors.OverloadedException
 import com.anthropic.errors.PermissionDeniedException
@@ -37,7 +38,7 @@ class AnthropicVisionProvider(
     private val modell: String,
     private val mapper: JsonMapper,
     private val innsats: Innsats = Innsats.MEDIUM,
-) : VisionProvider, AutoCloseable {
+) : VisionProvider {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -67,7 +68,7 @@ class AnthropicVisionProvider(
         return Tokenforbruk(brukt, inn, ut, kostnad)
     }
 
-    /** Spring kaller denne ved nedstenging (AutoCloseable), så HTTP-klienten frigjøres. */
+    /** Frigjør HTTP-klienten; kalles etter hvert kall (se [VisionProviderFabrikk]). */
     override fun close() = client.close()
 
     private fun lagForesporsel(bilde: ByteArray, mimeType: String): MessageCreateParams {
@@ -146,8 +147,12 @@ class AnthropicVisionProvider(
             ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ai_utilgjengelig", "AI-tjenesten er utilgjengelig akkurat nå.")
         }
         is UnauthorizedException, is PermissionDeniedException -> {
-            log.error("Anthropic avviste API-nøkkelen ({}). Sjekk ANTHROPIC_API_KEY.", e.statusCode())
-            aiFeil()
+            log.warn("Anthropic avviste husstandens API-nøkkel ({})", e.statusCode())
+            AiNokkelFeil.ugyldig()
+        }
+        is BadRequestException if e.message.orEmpty().contains("credit balance", ignoreCase = true) -> {
+            log.warn("Anthropic-kontoen til husstanden er tom for kreditt")
+            AiNokkelFeil.ingenKreditt()
         }
         else -> {
             log.error("Feil fra Anthropic ({}): {}", e.statusCode(), e.message)
