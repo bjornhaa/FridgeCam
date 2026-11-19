@@ -73,5 +73,7 @@ class SkanningService(
         }
         beholdning.erstatt(skanning.husstandId, skanningId, nye)
         skanninger.markerLagret(skanningId, varer.map { it.copy(navn = it.navn.trim()) })
+        // Den forrige beholdningens bilde trengs ikke lenger (#43).
+        skanninger.slettGamleBilder(skanning.husstandId)
     }
 }

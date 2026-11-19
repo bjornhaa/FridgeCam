@@ -2,6 +2,7 @@ package com.haakenstad.fridgecam.skanning
 
 import com.haakenstad.fridgecam.analyse.FunnetVare
 import com.haakenstad.fridgecam.analyse.Tokenforbruk
+import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.stereotype.Repository
@@ -47,6 +48,8 @@ class SkanningRepository(
     private val json: JsonMapper,
 ) {
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val rad = RowMapper { rs, _ ->
         val modell = rs.getString("modell")
         Skanning(
@@ -68,7 +71,10 @@ class SkanningRepository(
         )
     }
 
-    /** Lagrer skanningen og bildet, og returnerer id-en. */
+    /**
+     * Lagrer skanningen og bildet, og returnerer id-en. Rydder samtidig bort
+     * husstandens gamle bilder ([slettGamleBilder]), så ingen egen jobb trengs.
+     */
     @Transactional
     fun opprett(skanning: NySkanning): Long {
         val id = jdbc.queryForObject(
@@ -93,7 +99,38 @@ class SkanningRepository(
             "INSERT INTO skanning_bilde (skanning_id, mime_type, data) VALUES (:id, :mimeType, :data)",
             mapOf("id" to id, "mimeType" to skanning.bilde.mimeType, "data" to skanning.bilde.data),
         )
+        slettGamleBilder(skanning.husstandId)
         return id
+    }
+
+    /**
+     * Bare det siste bildet trengs (#43): Kjøleskapet viser det, og ingen
+     * historikk brukes. Bildet beholdes for husstandens nyeste skanning (den
+     * brukeren kanskje retter nå) og for skanningen beholdningen kom fra; alle
+     * andre slettes. Som regel er det samme skanning, altså ett bilde.
+     *
+     * Selve skanningene (AI-svar, rettet liste, kostnad) beholdes; de tar lite
+     * plass og trengs for å måle AI-kvaliteten. Med åpen registrering kan da
+     * ingen fylle databasen med bilder.
+     *
+     * @return antall slettede bilder
+     */
+    fun slettGamleBilder(husstandId: Long): Int {
+        val slettet = jdbc.update(
+            """
+            DELETE FROM skanning_bilde b
+            USING skanning s
+            WHERE b.skanning_id = s.id
+              AND s.husstand_id = :h
+              AND s.id <> (
+                  SELECT id FROM skanning WHERE husstand_id = :h ORDER BY tidspunkt DESC, id DESC LIMIT 1
+              )
+              AND NOT EXISTS (SELECT 1 FROM beholdning_vare v WHERE v.skanning_id = s.id)
+            """.trimIndent(),
+            mapOf("h" to husstandId),
+        )
+        if (slettet > 0) log.info("Slettet {} gamle bilder for husstand {}", slettet, husstandId)
+        return slettet
     }
 
     /** Lagrer brukerens rettede liste på skanningen, til senere måling av AI-kvalitet. */
