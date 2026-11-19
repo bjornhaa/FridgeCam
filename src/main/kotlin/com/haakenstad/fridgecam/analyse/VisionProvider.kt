@@ -6,9 +6,9 @@ import com.fasterxml.jackson.annotation.JsonValue
  * En AI-leverandør som kan se på et bilde av kjøleskapet og liste varene (#8).
  *
  * Resten av appen kjenner bare dette grensesnittet, så leverandøren kan byttes
- * med `AI_PROVIDER` uten andre endringer.
+ * med `AI_PROVIDER` uten andre endringer. Lages per kall med husstandens nøkkel.
  */
-interface VisionProvider {
+interface VisionProvider : AutoCloseable {
 
     /** Vises i svaret og i logger, f.eks. «anthropic/claude-opus-5-5». */
     val navn: String
@@ -18,6 +18,9 @@ interface VisionProvider {
      * @param mimeType `image/jpeg`, `image/png` eller `image/webp`
      */
     fun analyser(bilde: ByteArray, mimeType: String): Analyseresultat
+
+    /** Leverandøren lages per kall ([VisionProviderFabrikk]) og lukkes etterpå. */
+    override fun close() {}
 }
 
 data class Analyseresultat(

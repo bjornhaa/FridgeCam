@@ -3,7 +3,8 @@ import { krympBilde, type KrympetBilde } from '../bilde/krympBilde.ts'
 import { analyserBilde, type AnalyseSvar } from '../api/analyse.ts'
 import { ApiFeil } from '../api/klient.ts'
 import { lagreIKjoleskapet } from '../api/kjoleskap.ts'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { NOKKELFEIL } from '../api/aiNokkel.ts'
 import { VareListe } from '../vareliste/VareListe.tsx'
 import { fraAnalyse, type RedigerbarVare } from '../vareliste/redigering.ts'
 import { BildeMedBokser } from '../bilde/BildeMedBokser.tsx'
@@ -24,6 +25,8 @@ export function SkannSide() {
   const [visningsUrl, setVisningsUrl] = useState<string | null>(null)
   const [behandler, setBehandler] = useState(false)
   const [feil, setFeil] = useState<string | null>(null)
+  // Feil som brukeren må rette under Profil (mangler eller ugyldig AI-nøkkel).
+  const [nokkelfeil, setNokkelfeil] = useState(false)
   const [analyserer, setAnalyserer] = useState(false)
   const [analyse, setAnalyse] = useState<AnalyseSvar | null>(null)
   // Listen brukeren retter (#31). `analyse` beholdes urørt som AI-ens svar.
@@ -57,6 +60,7 @@ export function SkannSide() {
     if (!fil) return
 
     setFeil(null)
+    setNokkelfeil(false)
     setAnalyse(null)
     setVarer([])
     setValgtId(null)
@@ -92,6 +96,7 @@ export function SkannSide() {
   async function finnVarer() {
     if (!bilde) return
     setFeil(null)
+    setNokkelfeil(false)
     setAnalyserer(true)
     try {
       const svar = await analyserBilde(bilde.fil)
@@ -99,6 +104,7 @@ export function SkannSide() {
       setVarer(fraAnalyse(svar.varer))
     } catch (err) {
       setFeil(err instanceof ApiFeil ? err.message : 'Noe gikk galt. Prøv igjen.')
+      setNokkelfeil(err instanceof ApiFeil && NOKKELFEIL.has(err.code))
     } finally {
       setAnalyserer(false)
     }
@@ -133,6 +139,14 @@ export function SkannSide() {
         {feil && (
           <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-red-800 dark:bg-red-950 dark:text-red-200">
             {feil}
+            {nokkelfeil && (
+              <>
+                {' '}
+                <Link to="/profil" className="font-medium underline underline-offset-4">
+                  Gå til Profil
+                </Link>
+              </>
+            )}
           </p>
         )}
         {behandler ? (

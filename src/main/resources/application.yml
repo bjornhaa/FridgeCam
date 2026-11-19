@@ -46,7 +46,9 @@ fridgecam:
     provider: ${AI_PROVIDER:}
     # Tom = leverandørens standardmodell (anthropic: claude-opus-5-5, gemini: gemini-4-hydrogen).
     model: ${AI_MODEL:}
-    anthropic-api-key: ${ANTHROPIC_API_KEY:}
-    gemini-api-key: ${GEMINI_API_KEY:}
+    # Ingen felles AI-nøkkel i prod: hver husstand legger inn sin egen under Profil (#42).
+    # Nøklene krypteres med denne (base64, 32 byte). Må settes i prod; appen starter ikke uten.
+    # Lag en med: openssl rand -base64 32. Mistes den, må alle husstander legge inn nøkkelen på nytt.
+    nokkel-kryptering: ${FRIDGECAM_NOKKEL_KRYPTERING:}
     # low | medium | high: hvor mye modellen tenker. Lavere = raskere og billigere.
     effort: ${AI_EFFORT:medium}

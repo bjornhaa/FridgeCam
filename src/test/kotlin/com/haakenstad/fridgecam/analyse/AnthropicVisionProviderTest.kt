@@ -158,7 +158,8 @@ class AnthropicVisionProviderTest {
             429 to "rate_limit",
             529 to "ai_utilgjengelig",
             503 to "ai_utilgjengelig",
-            401 to "ai_feil",
+            401 to "ugyldig_ai_nokkel",
+            403 to "ugyldig_ai_nokkel",
             400 to "ai_feil",
         )
         for ((httpStatus, kode) in tilfeller) {
@@ -169,5 +170,15 @@ class AnthropicVisionProviderTest {
                 .`as`("HTTP $httpStatus")
                 .extracting("code").isEqualTo(kode)
         }
+    }
+
+    @Test
+    fun `tom kreditt på kontoen gir egen feilkode`() {
+        status = 400
+        svar = """{"type":"error","error":{"type":"invalid_request_error",""" +
+            """"message":"Your credit balance is too low to access the Anthropic API."}}"""
+
+        assertThatThrownBy { provider().analyser(bilde, "image/jpeg") }
+            .extracting("code").isEqualTo("ai_mangler_kreditt")
     }
 }

@@ -131,7 +131,7 @@ class GeminiVisionProviderTest {
             429 to "rate_limit",
             503 to "ai_utilgjengelig",
             500 to "ai_utilgjengelig",
-            403 to "ai_feil",
+            403 to "ugyldig_ai_nokkel",
             400 to "ai_feil",
         )
         for ((httpStatus, kode) in tilfeller) {

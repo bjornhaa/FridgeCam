@@ -1,8 +1,9 @@
 package com.haakenstad.fridgecam.skanning
 
+import com.haakenstad.fridgecam.ainokkel.AiNokkelService
 import com.haakenstad.fridgecam.analyse.FunnetVare
 import com.haakenstad.fridgecam.analyse.Tokenforbruk
-import com.haakenstad.fridgecam.analyse.VisionProvider
+import com.haakenstad.fridgecam.analyse.VisionProviderFabrikk
 import com.haakenstad.fridgecam.beholdning.BeholdningRepository
 import com.haakenstad.fridgecam.beholdning.NyBeholdningVare
 import com.haakenstad.fridgecam.common.ApiException
@@ -15,11 +16,14 @@ data class AnalysertSkanning(
     val skanningId: Long,
     val varer: List<FunnetVare>,
     val forbruk: Tokenforbruk?,
+    /** Leverandøren som svarte, f.eks. «anthropic/claude-opus-5-5 (effort medium)». */
+    val leverandor: String,
 )
 
 @Service
 class SkanningService(
-    private val visionProvider: VisionProvider,
+    private val fabrikk: VisionProviderFabrikk,
+    private val aiNokler: AiNokkelService,
     private val skanninger: SkanningRepository,
     private val beholdning: BeholdningRepository,
     private val tilgang: HusstandTilgang,
@@ -30,14 +34,18 @@ class SkanningService(
      * svar og forbruk. Da vet vi hva hvert kall kostet, og brukeren slipper å
      * laste opp bildet på nytt når listen lagres. Ingen transaksjon rundt
      * AI-kallet, som kan ta et halvt minutt.
+     *
+     * Kallet går med husstandens egen AI-nøkkel (#42); uten nøkkel stopper det
+     * med `mangler_ai_nokkel` før bildet sendes noe sted.
      */
     fun analyser(brukerId: Long, bilde: ByteArray, mimeType: String): AnalysertSkanning {
         val husstandId = tilgang.husstandFor(brukerId)
-        val resultat = visionProvider.analyser(bilde, mimeType)
+        val nokkel = if (fabrikk.kreverNokkel) aiNokler.nokkelFor(husstandId) else null
+        val (navn, resultat) = fabrikk.lag(nokkel).use { it.navn to it.analyser(bilde, mimeType) }
         val id = skanninger.opprett(
-            NySkanning(husstandId, brukerId, visionProvider.navn, resultat.forbruk, resultat.varer, Bilde(mimeType, bilde)),
+            NySkanning(husstandId, brukerId, navn, resultat.forbruk, resultat.varer, Bilde(mimeType, bilde)),
         )
-        return AnalysertSkanning(id, resultat.varer, resultat.forbruk)
+        return AnalysertSkanning(id, resultat.varer, resultat.forbruk, navn)
     }
 
     /** Bildet til en skanning, bare for medlemmer av husstanden (#33). */

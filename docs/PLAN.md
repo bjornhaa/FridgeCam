@@ -74,7 +74,7 @@ Ved første registrering opprettes automatisk en husstand med brukeren som eier.
 Tatt før handlelisten (bestemt 2026-11-17): appen tas i bruk på eget kjøleskap, så
 ekte skanninger og rettelser viser hva AI-en bommer på før handlelisten bygges, og
 mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene tas i.
-- [ ] API-nøkkel per husstand, kryptert med AES-256-GCM (som Spotify-tokens i talik-ai), før appen legges ut (#42)
+- [x] API-nøkkel per husstand, kryptert med AES-256-GCM (som Spotify-tokens i talik-ai), før appen legges ut (#42)
   - Hver husstand betaler for egne AI-kall, så åpen registrering koster ikke appeieren AI-kreditt
   - Ingen felles nøkkel fra miljøet i prod; uten nøkkel ber appen husstanden legge inn en
   - Alle medlemmer i husstanden deler nøkkelen

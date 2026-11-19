@@ -23,6 +23,9 @@ import java.util.UUID
         // Uavhengig av AI_PROVIDER i en lokal .env (local-profilen leser den).
         "fridgecam.ai.provider=fake",
         "fridgecam.ai.fake-forsinkelse=0s",
+        // Ekte nøkler fra .env skal aldri lastes i tester.
+        "fridgecam.ai.anthropic-api-key=",
+        "fridgecam.ai.gemini-api-key=",
     ],
 )
 @ActiveProfiles("local")
