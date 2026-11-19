@@ -116,6 +116,8 @@ cd frontend && npm test                    # Vitest
   `GeminiVisionProvider` (Interactions-API over REST med `RestClient`).
 - Valg: `AI_PROVIDER` (fake/anthropic/gemini), `AI_MODEL`, `AI_EFFORT` (low/medium/high).
   Standard: Claude Opus 5.5 på `medium` (valgt etter måling, se #11).
+  `AI_MODEL` må høre til leverandøren (`claude-…` / `gemini-…`); ellers stopper appen ved oppstart.
+  Til utvikling er `claude-haiku-5-5` med `low` omtrent 20 ganger billigere, men finner færre varer.
 - `AnalysePrompt`: felles prompt, JSON-skjema og opprydding i svaret. Bokser i to formater:
   `HJORNER` (x1,y1,x2,y2) for Claude, `BOX_2D` ([ymin,xmin,ymax,xmax]) for Gemini; begge
   normalisert 0–1000 og oversatt til `Boks(x1,y1,x2,y2)`.
