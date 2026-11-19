@@ -40,4 +40,26 @@ jobs:
       - name: Bygg jar med frontend og kjør tester
         run: mvn -B -Pwith-frontend verify
 
-  # Deploy til Fly.io kommer i fase 4.
+  # Push til main deployer til Fly når testene er grønne (#45). Fly bygger imaget
+  # selv (--remote-only). Blue-green (fly.toml): den nye maskinen må bestå
+  # helsesjekken før den gamle fjernes, så en app som ikke starter (f.eks. feilet
+  # migrering) gir feilet deploy, mens den gamle versjonen fortsetter.
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Deployer aldri to samtidig, og avbryter ikke en deploy som er i gang.
+    concurrency:
+      group: fly-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      # Låst til commit (v1.5), ikke en flyttbar gren.
+      - uses: superfly/flyctl-actions/setup-flyctl@fc53c09e1bc3be6f54706524e3b82c4f462f77be
+
+      - name: Deploy til Fly
+        run: flyctl deploy --remote-only --ha=false --app fridgecam
+        env:
+          # Deploy-token begrenset til appen fridgecam (fly tokens create deploy).
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

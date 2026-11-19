@@ -5,6 +5,12 @@ primary_region = "arn"   # Stockholm, nærmest Norge
 [build]
   # Tom = bygg fra Dockerfile i repo-roten.
 
+[deploy]
+  # Ny maskin startes og må bestå helsesjekken før den gamle fjernes (#45).
+  # Starter ikke appen (f.eks. feilet migrering), feiler deployen og den gamle
+  # versjonen kjører videre. Flyway kjører migreringene i én transaksjon.
+  strategy = "bluegreen"
+
 [env]
   AI_PROVIDER = "anthropic"
   # Databasen sover etter en time uten tilkoblinger (FLY_SCALE_TO_ZERO på fridgecam-db)

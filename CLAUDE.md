@@ -31,7 +31,10 @@ cd frontend && npm test                    # Vitest
 ## Drift (Fly.io, #44)
 
 - App `fridgecam` (https://fridgecam.fly.dev) og database `fridgecam-db` i `arn`, personlig org.
-  Manuell deploy: `fly deploy --remote-only --ha=false --app fridgecam` (ingen Docker lokalt; bygges hos Fly).
+  Push til `main` deployer automatisk etter grønne tester (CI-jobben `deploy`, `FLY_API_TOKEN` er et
+  deploy-token bare for `fridgecam`). Manuelt: `fly deploy --remote-only --ha=false --app fridgecam`
+  (ingen Docker lokalt; bygges hos Fly). Strategi `bluegreen`: starter ikke den nye versjonen (f.eks. feilet
+  migrering), rulles deployen tilbake og den gamle kjører videre (testet med ugyldig `AI_PROVIDER`).
 - **Begge sover når de ikke brukes:** appen stoppes av Fly-proxyen etter noen minutter uten trafikk
   (`auto_stop_machines`), databasen stopper selv etter en time uten tilkoblinger (`FLY_SCALE_TO_ZERO=1h`
   på maskinen, autostart via `fridgecam-db.flycast`). Første forespørsel etter en pause tar 10–20 s.
