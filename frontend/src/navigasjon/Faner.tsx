@@ -33,13 +33,24 @@ function Fane({ til, ikon, children }: { til: string; ikon: React.ReactNode; chi
         to={til}
         end
         className={({ isActive }) =>
-          `flex h-16 flex-col items-center justify-center gap-0.5 text-xs font-medium ${
-            isActive ? 'text-accent' : 'text-ink-soft dark:text-slate-400'
+          `flex h-16 flex-col items-center justify-center gap-1 text-xs ${
+            isActive ? 'font-semibold text-accent dark:text-cyan-300' : 'font-medium text-ink-soft dark:text-slate-400'
           }`
         }
       >
-        {ikon}
-        {children}
+        {({ isActive }) => (
+          <>
+            {/* Aktiv fane får en farget pille bak ikonet, ikke bare annen farge. */}
+            <span
+              className={`flex h-8 w-14 items-center justify-center rounded-full ${
+                isActive ? 'bg-accent/15 dark:bg-cyan-300/20' : ''
+              }`}
+            >
+              {ikon}
+            </span>
+            {children}
+          </>
+        )}
       </NavLink>
     </li>
   )

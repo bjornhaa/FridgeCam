@@ -108,7 +108,7 @@ export function AiKort() {
               setFeil(null)
             }}
             className={`rounded-lg px-3 py-2 text-sm font-medium ${
-              l.id === lev.id ? 'bg-white shadow-sm dark:bg-slate-900' : 'text-ink-soft dark:text-slate-300'
+              l.id === lev.id ? 'bg-accent text-white shadow-sm' : 'text-ink-soft dark:text-slate-300'
             }`}
           >
             {l.navn}
