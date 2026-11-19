@@ -82,8 +82,9 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
 - [x] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert) (#44)
   - Både app og database sover når de ikke brukes (database: `FLY_SCALE_TO_ZERO=1h`); kaldstart på 10–20 s er greit
   - Kostnad i praksis bare disk (< $1/mnd) så lenge det er få brukere; utvides ved behov
-- [ ] Deploy fra GitHub Actions ved push til `main` (#45)
+- [x] Deploy fra GitHub Actions ved push til `main`, blue-green så en app som ikke starter ikke tar ned prod (#45)
 - [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
+- [ ] Husstanden velger AI-leverandør og modell under Profil (#54), flyttet fra fase 7 (2026-11-19)
 
 ## Fase 4 – Flere kjøleskap
 En husstand kan ha flere kjøleskap, f.eks. hjemme, på fjellhytta og på hytta på Sørlandet.
@@ -115,7 +116,6 @@ Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger
 
 ## Fase 7 – Åpne for andre
 - [ ] Flere AI-leverandører (f.eks. OpenAI) bak samme grensesnitt
-- [ ] Husstand velger leverandør (nøkkel per husstand finnes allerede fra fase 3)
 - [ ] Begrensning av antall kall per husstand (kostnadskontroll)
 
 ## Senere / ideer
