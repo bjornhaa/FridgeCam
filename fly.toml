@@ -1,0 +1,42 @@
+# Fly.io-oppsett for FridgeCam (#44). Hemmeligheter settes med `fly secrets set`, se CLAUDE.md.
+app = "fridgecam"
+primary_region = "arn"   # Stockholm, nærmest Norge
+
+[build]
+  # Tom = bygg fra Dockerfile i repo-roten.
+
+[env]
+  AI_PROVIDER = "anthropic"
+  # Databasen sover etter en time uten tilkoblinger (FLY_SCALE_TO_ZERO på fridgecam-db)
+  # og vekkes av første tilkobling. Appen venter på den i stedet for å feile ved oppstart.
+  SPRING_DATASOURCE_HIKARI_CONNECTIONTIMEOUT = "60000"
+  SPRING_DATASOURCE_HIKARI_INITIALIZATIONFAILTIMEOUT = "90000"
+  # Få tilkoblinger holder for én husstand, og sparer minne på 512 MB.
+  SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE = "5"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Maskinen sover når ingen bruker appen, og vekkes av neste forespørsel
+  # (kaldstart på noen sekunder). Da betaler vi nesten bare for disken.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 50
+    hard_limit = 100
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "60s"
+  method = "get"
+  path = "/actuator/health"
+  protocol = "http"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "1024mb"

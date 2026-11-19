@@ -79,9 +79,9 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
   - Ingen felles nøkkel fra miljøet i prod; uten nøkkel ber appen husstanden legge inn en
   - Alle medlemmer i husstanden deler nøkkelen
 - [x] Bare siste bilde lagres per husstand, så åpen registrering ikke kan fylle Postgres-volumet (#43)
-- [ ] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert) (#44)
-  - Maskinen kan gå i dvale (`auto_stop_machines`, `min_machines_running = 0`); kaldstart på noen sekunder er greit
-  - Kostnadsvurdering: appmaskin i dvale + Postgres-maskin og volum (bildene ligger i Postgres)
+- [x] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert) (#44)
+  - Både app og database sover når de ikke brukes (database: `FLY_SCALE_TO_ZERO=1h`); kaldstart på 10–20 s er greit
+  - Kostnad i praksis bare disk (< $1/mnd) så lenge det er få brukere; utvides ved behov
 - [ ] Deploy fra GitHub Actions ved push til `main` (#45)
 - [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
 
