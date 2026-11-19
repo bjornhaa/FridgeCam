@@ -28,6 +28,23 @@ cd frontend && npm run dev                 # Vite på :5173, proxier /api og /ac
 cd frontend && npm test                    # Vitest
 ```
 
+## Drift (Fly.io, #44)
+
+- App `fridgecam` (https://fridgecam.fly.dev) og database `fridgecam-db` i `arn`, personlig org.
+  Manuell deploy: `fly deploy --remote-only --ha=false --app fridgecam` (ingen Docker lokalt; bygges hos Fly).
+- **Begge sover når de ikke brukes:** appen stoppes av Fly-proxyen etter noen minutter uten trafikk
+  (`auto_stop_machines`), databasen stopper selv etter en time uten tilkoblinger (`FLY_SCALE_TO_ZERO=1h`
+  på maskinen, autostart via `fridgecam-db.flycast`). Første forespørsel etter en pause tar 10–20 s.
+  Hikari venter på databasen (timeouts i `fly.toml`). `shared-cpu-2x`/1 GB gir kaldstart på ~11 s (mot 19 s
+  med 1x/512 MB) og koster bare mens maskinen er våken. Kostnad: i praksis bare disk (< $1/mnd).
+- `fridgecam-db` er Flys umanagede Postgres (`flyio/postgres-flex:18.1`, 256 MB, 1 GB volum), samme type
+  som talik-ai. Fly vedlikeholder den ikke lenger; daglige volum-snapshots (5 dager) er eneste backup.
+- Secrets (kan ikke leses ut igjen; lag nye ved behov): `SPRING_DATASOURCE_URL/USERNAME/PASSWORD`,
+  `JWT_SECRET` (ny = alle logges ut), `FRIDGECAM_NOKKEL_KRYPTERING` (ny = alle husstander må legge inn
+  AI-nøkkelen på nytt). `AI_PROVIDER` står i `fly.toml`; ingen AI-nøkkel på serveren.
+- Dockerfile: to trinn; byggetrinnet trenger `libatomic1` for Node fra frontend-maven-plugin.
+  `.dockerignore` holder `.env` og `testbilder/` utenfor imaget.
+
 ## Arbeidsflyt
 
 - Én gren per issue (eller to små issues sammen), PR med `Closes #N`, CI må være grønn.

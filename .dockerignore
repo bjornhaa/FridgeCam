@@ -1,0 +1,11 @@
+# Bare det bygget trenger. Viktigst: ingen hemmeligheter eller private bilder i imaget.
+.env
+.env.*
+testbilder/
+target/
+frontend/node_modules/
+frontend/dist/
+.git/
+.idea/
+*.iml
+docs/
