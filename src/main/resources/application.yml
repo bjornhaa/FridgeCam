@@ -21,6 +21,9 @@ server:
     # klienten får nettverksfeil i stedet for feilkoden bilde_for_stort.
     max-swallow-size: 20MB
   forward-headers-strategy: framework
+  # Riktig MIME-type for PWA-manifestet (#47); Tomcat kjenner ikke .webmanifest.
+  mime-mappings:
+    webmanifest: application/manifest+json
 
 management:
   endpoints:
