@@ -1,5 +1,7 @@
 package com.haakenstad.fridgecam.husstand
 
+import com.haakenstad.fridgecam.analyse.AiLeverandor
+import com.haakenstad.fridgecam.analyse.AiValg
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.stereotype.Repository
 
@@ -40,4 +42,19 @@ class HusstandRepository(private val jdbc: NamedParameterJdbcTemplate) {
             """.trimIndent(),
             mapOf("b" to brukerId),
         ) { rs, _ -> Medlemskap(rs.getLong("id"), rs.getString("navn"), Rolle.valueOf(rs.getString("rolle"))) }
+
+    /** Husstandens eget valg av AI-leverandør og modell (#54), eller null for appens standard. */
+    fun aiValg(husstandId: Long): AiValg? =
+        jdbc.query(
+            "SELECT ai_leverandor, ai_modell FROM husstand WHERE id = :h AND ai_leverandor IS NOT NULL",
+            mapOf("h" to husstandId),
+        ) { rs, _ -> AiValg(AiLeverandor.valueOf(rs.getString("ai_leverandor")), rs.getString("ai_modell")) }
+            .firstOrNull()
+
+    fun settAiValg(husstandId: Long, valg: AiValg) {
+        jdbc.update(
+            "UPDATE husstand SET ai_leverandor = :l, ai_modell = :m WHERE id = :h",
+            mapOf("h" to husstandId, "l" to valg.leverandor.name, "m" to valg.modell),
+        )
+    }
 }

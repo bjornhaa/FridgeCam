@@ -22,7 +22,12 @@ CREATE UNIQUE INDEX bruker_epost_unik ON bruker (lower(epost));
 CREATE TABLE husstand (
     id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     navn      TEXT        NOT NULL,
-    opprettet TIMESTAMPTZ NOT NULL DEFAULT now()
+    opprettet TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Husstandens valg av AI-leverandør og modell (#54, V5). Null = appens standard
+    -- (AI_PROVIDER/AI_MODEL). Modellen sjekkes mot listen i AiModeller i koden.
+    ai_leverandor TEXT CONSTRAINT husstand_ai_leverandor_gyldig CHECK (ai_leverandor IN ('ANTHROPIC', 'GEMINI')),
+    ai_modell     TEXT,
+    CONSTRAINT husstand_ai_valg_komplett CHECK ((ai_leverandor IS NULL) = (ai_modell IS NULL))
 );
 
 CREATE TABLE husstand_medlem (
