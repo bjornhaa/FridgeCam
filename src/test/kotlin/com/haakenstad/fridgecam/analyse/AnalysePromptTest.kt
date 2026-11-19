@@ -149,4 +149,24 @@ class AnalysePromptTest {
         assertThat(boksSkjema(Boksformat.BOX_2D)["type"]).isEqualTo("array")
         assertThat(boksSkjema(Boksformat.HJORNER)["type"]).isEqualTo("object")
     }
+
+    @Test
+    fun `bokser i piksler regnes om til 0–1000 og klemmes inn i bildet`() {
+        val json = """{"varer":[{"navn":"smør","antall":1,"sikkerhet":"høy","bokser":[
+            {"x1":0,"y1":0,"x2":562,"y2":750},
+            {"x1":900,"y1":1200,"x2":1300,"y2":1700}
+        ]}]}"""
+
+        val vare = AnalysePrompt.tolk(json, mapper, Bildestorrelse(1125, 1500)).single()
+
+        assertThat(vare.bokser).containsExactly(Boks(0, 0, 500, 500), Boks(800, 800, 1000, 1000))
+    }
+
+    @Test
+    fun `pikselprompten oppgir bildets størrelse`() {
+        assertThat(AnalysePrompt.system(Boksformat.PIKSLER)).contains("i piksler")
+        assertThat(AnalysePrompt.bruker(Bildestorrelse(1125, 1500)))
+            .isEqualTo("List matvarene i kjøleskapet på bildet. Bildet er 1125 piksler bredt og 1500 piksler høyt.")
+        assertThat(AnalysePrompt.bruker(null)).isEqualTo(AnalysePrompt.BRUKER)
+    }
 }

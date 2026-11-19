@@ -44,20 +44,23 @@ class AnthropicVisionProvider(
 
     override val navn = "anthropic/$modell (effort ${innsats.name.lowercase()})"
 
-    private val skjema = BetaJsonOutputFormat.Schema.builder()
-        .putAllAdditionalProperties(AnalysePrompt.SKJEMA.mapValues { JsonValue.from(it.value) })
+    private fun skjema(format: Boksformat) = BetaJsonOutputFormat.Schema.builder()
+        .putAllAdditionalProperties(AnalysePrompt.skjema(format).mapValues { JsonValue.from(it.value) })
         .build()
 
     override fun analyser(bilde: ByteArray, mimeType: String): Analyseresultat {
+        // Claude oppgir bokser i piksler (#58). Kjenner vi bildets størrelse, ber vi om
+        // piksler og regner om selv; ellers ber vi om 0–1000 som før.
+        val storrelse = Bildeformat.storrelse(bilde)
         val svar = try {
-            client.beta().messages().create(lagForesporsel(bilde, mimeType))
+            client.beta().messages().create(lagForesporsel(bilde, mimeType, storrelse))
         } catch (e: AnthropicServiceException) {
             throw oversett(e)
         } catch (e: AnthropicIoException) {
             log.warn("Fikk ikke kontakt med Anthropic", e)
             throw ApiException(HttpStatus.SERVICE_UNAVAILABLE, "ai_utilgjengelig", "Fikk ikke kontakt med AI-tjenesten.")
         }
-        return Analyseresultat(tolkSvar(svar), forbruk(svar))
+        return Analyseresultat(tolkSvar(svar, storrelse), forbruk(svar))
     }
 
     private fun forbruk(svar: BetaMessage): Tokenforbruk {
@@ -71,11 +74,12 @@ class AnthropicVisionProvider(
     /** Frigjør HTTP-klienten; kalles etter hvert kall (se [VisionProviderFabrikk]). */
     override fun close() = client.close()
 
-    private fun lagForesporsel(bilde: ByteArray, mimeType: String): MessageCreateParams {
+    private fun lagForesporsel(bilde: ByteArray, mimeType: String, storrelse: Bildestorrelse?): MessageCreateParams {
+        val format = if (storrelse != null) Boksformat.PIKSLER else Boksformat.HJORNER
         val builder = MessageCreateParams.builder()
             .model(modell)
             .maxTokens(16_000L)
-            .system(AnalysePrompt.SYSTEM)
+            .system(AnalysePrompt.system(format))
             .addUserMessageOfContentBlockParams(
                 listOf(
                     BetaContentBlockParam.ofImage(
@@ -84,7 +88,7 @@ class AnthropicVisionProvider(
                             .data(Base64.getEncoder().encodeToString(bilde))
                             .build(),
                     ),
-                    BetaContentBlockParam.ofText(AnalysePrompt.BRUKER),
+                    BetaContentBlockParam.ofText(AnalysePrompt.bruker(storrelse)),
                 ),
             )
             .outputConfig(
@@ -96,7 +100,7 @@ class AnthropicVisionProvider(
                             Innsats.HIGH -> BetaOutputConfig.Effort.HIGH
                         },
                     )
-                    .format(BetaJsonOutputFormat.builder().schema(skjema).build())
+                    .format(BetaJsonOutputFormat.builder().schema(skjema(format)).build())
                     .build(),
             )
         if (modell in MODELLER_MED_FALLBACK) {
@@ -107,7 +111,7 @@ class AnthropicVisionProvider(
         return builder.build()
     }
 
-    private fun tolkSvar(svar: BetaMessage): List<FunnetVare> {
+    private fun tolkSvar(svar: BetaMessage, storrelse: Bildestorrelse?): List<FunnetVare> {
         when (svar.stopReason().orElse(null)) {
             BetaStopReason.REFUSAL -> {
                 log.warn("Anthropic avviste bildet: {}", svar.stopDetails().orElse(null))
@@ -129,7 +133,7 @@ class AnthropicVisionProvider(
                 throw aiFeil()
             }
         return try {
-            AnalysePrompt.tolk(tekst, mapper)
+            AnalysePrompt.tolk(tekst, mapper, storrelse)
         } catch (e: IllegalArgumentException) {
             log.error("Kunne ikke tolke Anthropic-svaret: {}", e.message)
             throw aiFeil()

@@ -142,9 +142,11 @@ cd frontend && npm test                    # Vitest
   Standard: Claude Opus 5.5 på `medium` (valgt etter måling, se #11).
   `AI_MODEL` må høre til leverandøren (`claude-…` / `gemini-…`); ellers stopper appen ved oppstart.
   Til utvikling er `claude-haiku-5-5` med `low` omtrent 20 ganger billigere, men finner færre varer.
-- `AnalysePrompt`: felles prompt, JSON-skjema og opprydding i svaret. Bokser i to formater:
-  `HJORNER` (x1,y1,x2,y2) for Claude, `BOX_2D` ([ymin,xmin,ymax,xmax]) for Gemini; begge
-  normalisert 0–1000 og oversatt til `Boks(x1,y1,x2,y2)`.
+- `AnalysePrompt`: felles prompt, JSON-skjema og opprydding i svaret. Bokser lagres som
+  `Boks(x1,y1,x2,y2)` normalisert 0–1000. **Claude oppgir piksler** selv når den bes om 0–1000 (#58),
+  så den får bildets størrelse (`Bildeformat.storrelse`, fra filhodet) og formatet `PIKSLER`;
+  backend regner om. `HJORNER` (0–1000) brukes bare når størrelsen ikke kan leses. Gemini får
+  `BOX_2D` ([ymin,xmin,ymax,xmax], 0–1000), som den er trent på.
 - Feilkoder via `ApiException` → `{code, message}`: `rate_limit`, `ai_utilgjengelig`,
   `ai_avviste`, `ai_feil`, `mangler_ai_nokkel`, `ugyldig_ai_nokkel`, `ai_mangler_kreditt`, `bilde_mangler`, `ugyldig_bildeformat`, `bilde_for_stort`; for innlogging
   `ikke_innlogget`, `ugyldig_innlogging`, `epost_i_bruk`, `ikke_funnet`,

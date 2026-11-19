@@ -181,4 +181,22 @@ class AnthropicVisionProviderTest {
         assertThatThrownBy { provider().analyser(bilde, "image/jpeg") }
             .extracting("code").isEqualTo("ai_mangler_kreditt")
     }
+
+    @Test
+    fun `med kjent bildestørrelse bes Claude om piksler, som regnes om til 0–1000 (#58)`() {
+        val jpeg = BildeformatTest.bilde("jpg", 1125, 1500)
+        svar = melding(
+            """{"varer":[{"navn":"smør","antall":1,"sikkerhet":"høy","bokser":[{"x1":225,"y1":300,"x2":450,"y2":600}]}]}""",
+        )
+
+        val resultat = provider().analyser(jpeg, "image/jpeg")
+
+        assertThat(resultat.varer.single().bokser).containsExactly(Boks(200, 200, 400, 400))
+        val body = mottattBody!!
+        assertThat(body["system"].asString()).isEqualTo(AnalysePrompt.system(Boksformat.PIKSLER))
+        assertThat(body["messages"][0]["content"][1]["text"].asString())
+            .isEqualTo("List matvarene i kjøleskapet på bildet. Bildet er 1125 piksler bredt og 1500 piksler høyt.")
+        assertThat(body["output_config"]["format"]["schema"]["properties"]["varer"]["items"]["properties"]["bokser"]["description"].asString())
+            .isEqualTo("Hvor varen er i bildet, i piksler")
+    }
 }
