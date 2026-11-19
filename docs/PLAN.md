@@ -83,7 +83,7 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
   - Både app og database sover når de ikke brukes (database: `FLY_SCALE_TO_ZERO=1h`); kaldstart på 10–20 s er greit
   - Kostnad i praksis bare disk (< $1/mnd) så lenge det er få brukere; utvides ved behov
 - [x] Deploy fra GitHub Actions ved push til `main`, blue-green så en app som ikke starter ikke tar ned prod (#45)
-- [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
+- [x] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
 - [ ] Husstanden velger AI-leverandør og modell under Profil (#54), flyttet fra fase 7 (2026-11-19)
 
 ## Fase 4 – Flere kjøleskap

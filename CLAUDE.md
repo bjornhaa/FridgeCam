@@ -151,6 +151,14 @@ cd frontend && npm test                    # Vitest
   uavgrenset advice. `server.tomcat.max-swallow-size: 20MB` trengs for at 413 når klienten.
 - Bildet krympes i nettleseren (`frontend/src/bilde/krympBilde.ts`: 1500 px, JPEG 0,8, EXIF-rotasjon).
 
+### PWA (#47)
+- `frontend/public/manifest.webmanifest`, ikoner laget av `scripts/lag-ikoner.py` (ren Python, samme figur
+  som `favicon.svg`; kjør på nytt ved endring), iOS-tagger i `index.html`.
+- `public/sw.js` registreres bare i produksjonsbygget. `/api/` og `/actuator/` caches aldri; sider hentes
+  fra nettet først (cache bare uten nett), så en ny versjon tas i bruk med en gang; `/assets/` caches først
+  og ryddes mot siste `index.html`. Endres strategien, bytt `CACHE`-navnet.
+- Teste lokalt: `npm run build && npx vite preview --port 4173` + tunnel mot 4173 (service worker krever HTTPS).
+
 ### Måling av AI-kvalitet (`src/test/.../sammenligning/`)
 - `SammenligningTest` kjører testbilder mot ekte API-er og teller mot en fasit. Kjører bare med
   `FRIDGECAM_SAMMENLIGNING=1`. **Koster penger (Claude); spør brukeren først.**
