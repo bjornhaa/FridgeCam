@@ -1,6 +1,7 @@
 package com.haakenstad.fridgecam.skanning
 
 import com.haakenstad.fridgecam.ainokkel.AiNokkelService
+import com.haakenstad.fridgecam.ainokkel.AiValgService
 import com.haakenstad.fridgecam.analyse.FunnetVare
 import com.haakenstad.fridgecam.analyse.Tokenforbruk
 import com.haakenstad.fridgecam.analyse.VisionProviderFabrikk
@@ -24,6 +25,7 @@ data class AnalysertSkanning(
 class SkanningService(
     private val fabrikk: VisionProviderFabrikk,
     private val aiNokler: AiNokkelService,
+    private val aiValg: AiValgService,
     private val skanninger: SkanningRepository,
     private val beholdning: BeholdningRepository,
     private val tilgang: HusstandTilgang,
@@ -35,13 +37,14 @@ class SkanningService(
      * laste opp bildet på nytt når listen lagres. Ingen transaksjon rundt
      * AI-kallet, som kan ta et halvt minutt.
      *
-     * Kallet går med husstandens egen AI-nøkkel (#42); uten nøkkel stopper det
-     * med `mangler_ai_nokkel` før bildet sendes noe sted.
+     * Kallet går med husstandens valgte leverandør og modell (#54) og egen nøkkel
+     * (#42); uten nøkkel stopper det med `mangler_ai_nokkel` før bildet sendes noe sted.
      */
     fun analyser(brukerId: Long, bilde: ByteArray, mimeType: String): AnalysertSkanning {
         val husstandId = tilgang.husstandFor(brukerId)
-        val nokkel = if (fabrikk.kreverNokkel) aiNokler.nokkelFor(husstandId) else null
-        val (navn, resultat) = fabrikk.lag(nokkel).use { it.navn to it.analyser(bilde, mimeType) }
+        val valg = aiValg.valgFor(husstandId)
+        val nokkel = if (fabrikk.erFake) null else aiNokler.nokkelFor(husstandId, valg.leverandor)
+        val (navn, resultat) = fabrikk.lag(valg, nokkel).use { it.navn to it.analyser(bilde, mimeType) }
         val id = skanninger.opprett(
             NySkanning(husstandId, brukerId, navn, resultat.forbruk, resultat.varer, Bilde(mimeType, bilde)),
         )

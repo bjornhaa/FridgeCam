@@ -113,7 +113,7 @@ cd frontend && npm test                    # Vitest
 - All tilgang til husstandsdata går via `HusstandTilgang`: `husstandFor(bruker)` og
   `sjekkMedlem(...)`, som gir 404 `ikke_funnet` (ikke 403) for andres data.
 
-### AI-nøkkel per husstand (`ainokkel/`, #42)
+### AI-valg og -nøkler per husstand (`ainokkel/`, #42, #54)
 - **Nøklene må aldri komme på avveie.** De lagres bare kryptert (`husstand_ai_nokkel`), dekrypteres bare
   rett før et AI-kall, og logges eller returneres aldri. Alle klasser som holder en nøkkel (`AiNokkel`,
   `AiNokkelForesporsel`, `AiProperties`) har `toString` som skjuler den; hold det slik, og bruk aldri
@@ -121,11 +121,15 @@ cd frontend && npm test                    # Vitest
 - `NokkelKryptering`: AES-256-GCM, hovednøkkel fra `FRIDGECAM_NOKKEL_KRYPTERING` (base64, 32 byte),
   husstand + leverandør som AAD, format `v1:…`. `local` har en nullnøkkel som avvises utenfor `local`.
   Mistes hovednøkkelen, må alle husstander legge inn nøkkelen på nytt.
-- `GET/PUT/DELETE /api/husstand/ai-nokkel`: alle i husstanden kan legge inn, bytte og fjerne; svaret har
-  bare `sisteTegn`. Anthropic-nøkler må begynne med `sk-ant-`, og admin-nøkler (`sk-ant-admin…`) avvises.
-- `VisionProviderFabrikk` lager leverandøren per kall med husstandens nøkkel (lukkes etterpå). Leverandør
-  og modell er fortsatt felles (`AI_PROVIDER`/`AI_MODEL`); med `fake` trengs ingen nøkkel, og nøkkelen
-  lagres som Anthropic-nøkkel så skjemaet kan prøves.
+- Husstanden velger leverandør og modell selv (`husstand.ai_leverandor`/`ai_modell`, null = standard fra
+  `AI_PROVIDER`/`AI_MODEL`). Bare modeller i `AiModeller` kan velges (navn, beskrivelse, pris per bilde).
+  Én nøkkel per leverandør; skanning bruker nøkkelen for valgt leverandør.
+- API (`AiInnstillingerController`): `GET /api/husstand/ai`, `PUT /api/husstand/ai/valg`,
+  `PUT /api/husstand/ai/nokkel` (`{leverandor, nokkel}`), `DELETE /api/husstand/ai/nokkel/{leverandor}`.
+  Alle i husstanden kan endre; svaret har bare `sisteTegn`. Anthropic-nøkler må begynne med `sk-ant-`, og
+  admin-nøkler (`sk-ant-admin…`) avvises.
+- `VisionProviderFabrikk.lag(valg, nokkel)` lager leverandøren per kall (lukkes etterpå). Med `fake` brukes
+  fake-leverandøren uansett valg, og ingen nøkkel trengs.
 - Feilkoder: `mangler_ai_nokkel`, `ugyldig_ai_nokkel`, `ai_mangler_kreditt`; Skann lenker da til Profil.
 - `ANTHROPIC_API_KEY`/`GEMINI_API_KEY` er bare lokal reserve (koblet til i `application-local.yml`, og
   koden sjekker `local`-profilen). Testene blanker dem, så ekte nøkler fra `.env` aldri lastes.

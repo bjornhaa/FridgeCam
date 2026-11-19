@@ -35,10 +35,10 @@ class AiNokkelFlytTest : AppTest() {
     }
 
     private fun lagreNokkel(token: String, nokkel: String) {
-        mvc.put("/api/husstand/ai-nokkel") {
+        mvc.put("/api/husstand/ai/nokkel") {
             header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
-            content = """{"nokkel":"$nokkel"}"""
+            content = """{"leverandor":"anthropic","nokkel":"$nokkel"}"""
         }.andExpect { status { isOk() } }
     }
 
@@ -81,16 +81,49 @@ class AiNokkelFlytTest : AppTest() {
         assertThat(logg.all).doesNotContain(NOKKEL_AVVIST)
     }
 
+    @Test
+    fun `husstandens valgte modell sendes til AI-tjenesten`() {
+        val token = registrer()
+        lagreNokkel(token, NOKKEL_EN)
+        mvc.put("/api/husstand/ai/valg") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"leverandor":"anthropic","modell":"claude-haiku-5-5"}"""
+        }.andExpect { status { isOk() } }
+
+        skann(token).andExpect { status { isOk() }; jsonPath("$.leverandor") { value("anthropic/claude-haiku-5-5 (effort medium)") } }
+        assertThat(mottatteModeller.last()).isEqualTo("claude-haiku-5-5")
+    }
+
+    @Test
+    fun `valgt leverandør uten nøkkel stopper skanningen selv om en annen leverandør har nøkkel`() {
+        val token = registrer()
+        lagreNokkel(token, NOKKEL_EN)
+        mvc.put("/api/husstand/ai/valg") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"leverandor":"gemini","modell":"gemini-3.8-flash"}"""
+        }.andExpect { status { isOk() } }
+
+        skann(token).andExpect {
+            status { isConflict() }
+            jsonPath("$.code") { value("mangler_ai_nokkel") }
+            jsonPath("$.message") { value(org.hamcrest.Matchers.containsString("Google Gemini")) }
+        }
+    }
+
     companion object {
         const val NOKKEL_EN = "sk-ant-api03-forste-husstand-testnokkel-1111"
         const val NOKKEL_TO = "sk-ant-api03-andre-husstand-testnokkel-2222"
         const val NOKKEL_AVVIST = "sk-ant-api03-avvist-testnokkel-3333"
 
         val mottatteNokler = CopyOnWriteArrayList<String>()
+        val mottatteModeller = CopyOnWriteArrayList<String>()
 
         private val server: HttpServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
             createContext("/") { ex ->
-                ex.requestBody.readAllBytes()
+                val body = String(ex.requestBody.readAllBytes())
+                Regex("\"model\"\\s*:\\s*\"([^\"]+)\"").find(body)?.let { mottatteModeller += it.groupValues[1] }
                 // SDK-en sender nøkkelen som `Authorization: Bearer …` (eldre versjoner: `x-api-key`).
                 val nokkel = ex.requestHeaders.getFirst("x-api-key")
                     ?: ex.requestHeaders.getFirst("Authorization").orEmpty().removePrefix("Bearer ")

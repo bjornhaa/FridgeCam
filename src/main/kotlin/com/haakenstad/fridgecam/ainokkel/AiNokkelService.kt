@@ -2,7 +2,6 @@ package com.haakenstad.fridgecam.ainokkel
 
 import com.haakenstad.fridgecam.analyse.AiLeverandor
 import com.haakenstad.fridgecam.analyse.AiProperties
-import com.haakenstad.fridgecam.analyse.VisionProviderFabrikk
 import com.haakenstad.fridgecam.common.ApiException
 import com.haakenstad.fridgecam.husstand.HusstandTilgang
 import org.slf4j.LoggerFactory
@@ -12,61 +11,52 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import java.time.Instant
 
-/** Det frontend får vite om nøkkelen. Selve nøkkelen sendes aldri tilbake. */
-data class AiNokkelStatus(
-    /** `anthropic` eller `gemini`. */
-    val leverandor: String,
-    /** False med fake-leverandøren (lokalt og i tester): da trengs ingen nøkkel. */
-    val kreves: Boolean,
-    val nokkel: NokkelInfo?,
-    /** Bare lokalt: husstanden har ingen nøkkel, men ANTHROPIC_API_KEY/GEMINI_API_KEY fra .env brukes. */
-    val reserve: Boolean,
-)
-
 data class NokkelInfo(val sisteTegn: String, val endret: Instant, val endretAv: String?)
 
 /**
- * Husstandens AI-nøkkel (#42): legges inn, byttes og fjernes av alle i husstanden,
- * og brukes til husstandens AI-kall. Nøkkelen lagres bare kryptert, dekrypteres
- * bare rett før et AI-kall, og logges eller returneres aldri.
+ * Husstandens AI-nøkler, én per leverandør (#42, #54): legges inn, byttes og fjernes
+ * av alle i husstanden. Nøkkelen lagres bare kryptert, dekrypteres bare rett før
+ * et AI-kall, og logges eller returneres aldri.
  */
 @Service
 class AiNokkelService(
     private val nokler: AiNokkelRepository,
     private val kryptering: NokkelKryptering,
     private val tilgang: HusstandTilgang,
-    private val fabrikk: VisionProviderFabrikk,
     private val props: AiProperties,
     env: Environment,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
     private val lokal = env.acceptsProfiles(Profiles.of("local"))
-    private val leverandor get() = fabrikk.nokkelLeverandor
 
-    fun status(brukerId: Long): AiNokkelStatus = statusFor(tilgang.husstandFor(brukerId))
-
-    fun lagre(brukerId: Long, nokkel: String): AiNokkelStatus {
+    fun lagre(brukerId: Long, leverandor: AiLeverandor, nokkel: String) {
         val husstandId = tilgang.husstandFor(brukerId)
         val ren = validerNokkel(leverandor, nokkel)
         nokler.lagre(husstandId, leverandor, kryptering.krypter(ren, husstandId, leverandor), ren.takeLast(4), brukerId)
         log.info("AI-nøkkel for {} lagt inn for husstand {} av bruker {}", leverandor, husstandId, brukerId)
-        return statusFor(husstandId)
     }
 
-    fun fjern(brukerId: Long) {
+    fun fjern(brukerId: Long, leverandor: AiLeverandor) {
         val husstandId = tilgang.husstandFor(brukerId)
         nokler.slett(husstandId, leverandor)
         log.info("AI-nøkkel for {} fjernet for husstand {} av bruker {}", leverandor, husstandId, brukerId)
     }
 
+    /** Det som kan vises om nøkkelen (aldri selve nøkkelen), eller null uten nøkkel. */
+    fun info(husstandId: Long, leverandor: AiLeverandor): NokkelInfo? =
+        nokler.finn(husstandId, leverandor)?.let { NokkelInfo(it.sisteTegn, it.endret, it.endretAv) }
+
+    /** Bare lokalt: om nøkkelen fra .env brukes når husstanden ikke har lagt inn egen. */
+    fun harReserve(leverandor: AiLeverandor): Boolean = reserveNokkel(props, leverandor, lokal) != null
+
     /**
-     * Nøkkelen husstandens AI-kall skal bruke. Uten nøkkel: `mangler_ai_nokkel`,
-     * og frontend sender brukeren til Profil.
+     * Nøkkelen husstandens AI-kall hos [leverandor] skal bruke. Uten nøkkel:
+     * `mangler_ai_nokkel`, og frontend sender brukeren til Profil.
      */
-    fun nokkelFor(husstandId: Long): AiNokkel {
+    fun nokkelFor(husstandId: Long, leverandor: AiLeverandor): AiNokkel {
         val lagret = nokler.finn(husstandId, leverandor)
-            ?: return reserveNokkel(props, leverandor, lokal) ?: throw manglerNokkel()
+            ?: return reserveNokkel(props, leverandor, lokal) ?: throw manglerNokkel(leverandor)
         return try {
             AiNokkel(kryptering.dekrypter(lagret.kryptert, husstandId, leverandor))
         } catch (e: Exception) {
@@ -80,25 +70,21 @@ class AiNokkelService(
         }
     }
 
-    private fun statusFor(husstandId: Long): AiNokkelStatus {
-        val lagret = nokler.finn(husstandId, leverandor)
-        return AiNokkelStatus(
-            leverandor = leverandor.name.lowercase(),
-            kreves = fabrikk.kreverNokkel,
-            nokkel = lagret?.let { NokkelInfo(it.sisteTegn, it.endret, it.endretAv) },
-            reserve = lagret == null && reserveNokkel(props, leverandor, lokal) != null,
-        )
-    }
-
     companion object {
         private const val MAKS_LENGDE = 500
         private const val MIN_LENGDE = 20
 
-        fun manglerNokkel() = ApiException(
+        fun manglerNokkel(leverandor: AiLeverandor) = ApiException(
             HttpStatus.CONFLICT,
             "mangler_ai_nokkel",
-            "Husstanden har ikke lagt inn en AI-nøkkel. Legg den inn under Profil.",
+            "Husstanden har ikke lagt inn en AI-nøkkel for ${leverandornavn(leverandor)}. Legg den inn under Profil.",
         )
+
+        fun leverandornavn(leverandor: AiLeverandor) = when (leverandor) {
+            AiLeverandor.ANTHROPIC -> "Anthropic"
+            AiLeverandor.GEMINI -> "Google Gemini"
+            AiLeverandor.FAKE -> "fake"
+        }
 
         /**
          * Lokal reserve fra `.env`, så man kan utvikle uten å legge inn nøkkelen

@@ -38,79 +38,95 @@ data class AiProperties(
     override fun toString() = "AiProperties(provider=$provider, model=$model, effort=$effort)"
 }
 
+/** Leverandør og modell for et AI-kall: husstandens valg, eller appens standard (#54). */
+data class AiValg(val leverandor: AiLeverandor, val modell: String)
+
 /**
- * Lager en [VisionProvider] per AI-kall, med husstandens nøkkel (#42).
+ * Lager en [VisionProvider] per AI-kall, med husstandens valg og nøkkel (#42, #54).
  *
- * Leverandør og modell velges ved oppstart (`AI_PROVIDER`, `AI_MODEL`); mangler
- * `AI_PROVIDER`, stopper appen med en tydelig melding i stedet for å feile på
- * første bilde.
+ * `AI_PROVIDER`/`AI_MODEL` gir standardvalget for husstander som ikke har valgt selv.
+ * Mangler `AI_PROVIDER`, eller hører `AI_MODEL` til en annen leverandør, stopper appen
+ * ved oppstart i stedet for å feile på første bilde. Med `fake` (lokalt og i tester)
+ * brukes fake-leverandøren uansett hva husstanden har valgt, og ingen nøkkel trengs.
  */
 @Component
 class VisionProviderFabrikk(private val props: AiProperties, private val mapper: JsonMapper) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    val leverandor: AiLeverandor = props.provider
+    private val leverandor: AiLeverandor = props.provider
         ?: throw IllegalStateException(
             "AI_PROVIDER er ikke satt. Gyldige verdier: " +
                 AiLeverandor.entries.joinToString { it.name.lowercase() },
         )
 
-    /** Fake trenger ingen nøkkel. */
-    val kreverNokkel = leverandor != AiLeverandor.FAKE
+    /** Fake trenger ingen nøkkel og ser bort fra husstandens valg. */
+    val erFake = leverandor == AiLeverandor.FAKE
 
     /**
-     * Leverandøren husstandens nøkkel gjelder for. Med fake lagres den som en
-     * Anthropic-nøkkel, så skjemaet i Profil kan prøves uten ekte AI.
+     * Valget for husstander som ikke har valgt selv. Med fake vises Anthropic som
+     * standard, så skjemaet i Profil kan prøves uten ekte AI.
      */
-    val nokkelLeverandor = if (leverandor == AiLeverandor.FAKE) AiLeverandor.ANTHROPIC else leverandor
-
-    private val modell: String = props.model?.trim()?.takeIf { it.isNotEmpty() }?.also(::sjekkModell) ?: when (leverandor) {
-        AiLeverandor.ANTHROPIC -> AnthropicVisionProvider.STANDARD_MODELL
-        AiLeverandor.GEMINI -> GeminiVisionProvider.STANDARD_MODELL
-        AiLeverandor.FAKE -> "fake"
-    }
-
-    /**
-     * Stopper oppstart når `AI_MODEL` hører til en annen leverandør enn
-     * `AI_PROVIDER` (f.eks. en Claude-modell sendt til Gemini), i stedet for at
-     * hver skanning feiler. Fake bryr seg ikke om modellen.
-     */
-    private fun sjekkModell(modell: String) {
-        val (prefiks, navn) = when (leverandor) {
-            AiLeverandor.ANTHROPIC -> "claude-" to "Anthropic"
-            AiLeverandor.GEMINI -> "gemini-" to "Gemini"
-            AiLeverandor.FAKE -> return
-        }
-        check(modell.startsWith(prefiks)) {
-            "AI_MODEL=$modell passer ikke med AI_PROVIDER=${leverandor.name.lowercase()}: " +
-                "$navn-modeller begynner med «$prefiks». Rett AI_MODEL, eller fjern den for å bruke standardmodellen."
-        }
+    val standardValg: AiValg = run {
+        val lev = if (erFake) AiLeverandor.ANTHROPIC else leverandor
+        val modell = props.model?.trim()?.takeIf { it.isNotEmpty() && !erFake }?.also { sjekkModell(lev, it) }
+            ?: standardModell(lev)
+        AiValg(lev, modell)
     }
 
     init {
-        log.info("AI-leverandør: {}, modell {}, effort {}", leverandor.name.lowercase(), modell, props.effort.name.lowercase())
+        log.info(
+            "AI-leverandør: {}, standardmodell {}, effort {}",
+            leverandor.name.lowercase(), if (erFake) "fake" else standardValg.modell, props.effort.name.lowercase(),
+        )
     }
 
     /**
      * En leverandør for ett kall. Lukk den etterpå (`use`), så HTTP-klienten frigjøres.
      *
-     * @param nokkel husstandens nøkkel; kreves for alle unntatt fake
+     * @param nokkel husstandens nøkkel for [valg]-ets leverandør; kreves for alle unntatt fake
      */
-    fun lag(nokkel: AiNokkel?): VisionProvider = when (leverandor) {
-        AiLeverandor.FAKE -> FakeVisionProvider(props.fakeForsinkelse)
-        AiLeverandor.ANTHROPIC -> {
-            val client = AnthropicOkHttpClient.builder()
-                .apiKey(krev(nokkel).verdi)
-                // Et bilde med medium effort tar typisk 5–30 s; dette er taket per forsøk.
-                .timeout(Duration.ofSeconds(90))
-                .apply { props.anthropicBaseUrl?.takeIf { it.isNotBlank() }?.let { baseUrl(it) } }
-                .build()
-            AnthropicVisionProvider(client, modell, mapper, props.effort)
+    fun lag(valg: AiValg, nokkel: AiNokkel?): VisionProvider {
+        if (erFake) return FakeVisionProvider(props.fakeForsinkelse)
+        return when (valg.leverandor) {
+            AiLeverandor.ANTHROPIC -> {
+                val client = AnthropicOkHttpClient.builder()
+                    .apiKey(krev(nokkel).verdi)
+                    // Et bilde med medium effort tar typisk 5–30 s; dette er taket per forsøk.
+                    .timeout(Duration.ofSeconds(90))
+                    .apply { props.anthropicBaseUrl?.takeIf { it.isNotBlank() }?.let { baseUrl(it) } }
+                    .build()
+                AnthropicVisionProvider(client, valg.modell, mapper, props.effort)
+            }
+            AiLeverandor.GEMINI -> GeminiVisionProvider(krev(nokkel).verdi, valg.modell, mapper, props.effort)
+            AiLeverandor.FAKE -> FakeVisionProvider(props.fakeForsinkelse)
         }
-        AiLeverandor.GEMINI -> GeminiVisionProvider(krev(nokkel).verdi, modell, mapper, props.effort)
     }
 
     private fun krev(nokkel: AiNokkel?): AiNokkel =
-        requireNotNull(nokkel) { "AI_PROVIDER=${leverandor.name.lowercase()} krever husstandens nøkkel" }
+        requireNotNull(nokkel) { "AI-kall krever husstandens nøkkel" }
+
+    companion object {
+        fun standardModell(leverandor: AiLeverandor): String = when (leverandor) {
+            AiLeverandor.ANTHROPIC -> AnthropicVisionProvider.STANDARD_MODELL
+            AiLeverandor.GEMINI -> GeminiVisionProvider.STANDARD_MODELL
+            AiLeverandor.FAKE -> "fake"
+        }
+
+        /**
+         * Stopper oppstart når `AI_MODEL` hører til en annen leverandør enn
+         * `AI_PROVIDER` (f.eks. en Claude-modell sendt til Gemini).
+         */
+        private fun sjekkModell(leverandor: AiLeverandor, modell: String) {
+            val (prefiks, navn) = when (leverandor) {
+                AiLeverandor.ANTHROPIC -> "claude-" to "Anthropic"
+                AiLeverandor.GEMINI -> "gemini-" to "Gemini"
+                AiLeverandor.FAKE -> return
+            }
+            check(modell.startsWith(prefiks)) {
+                "AI_MODEL=$modell passer ikke med AI_PROVIDER=${leverandor.name.lowercase()}: " +
+                    "$navn-modeller begynner med «$prefiks». Rett AI_MODEL, eller fjern den for å bruke standardmodellen."
+            }
+        }
+    }
 }

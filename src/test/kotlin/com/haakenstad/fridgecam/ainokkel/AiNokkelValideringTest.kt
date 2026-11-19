@@ -49,6 +49,6 @@ class AiNokkelValideringTest {
     @Test
     fun `AiNokkel og forespørselen viser ikke nøkkelen i toString`() {
         assertThat(AiNokkel(gyldig).toString()).doesNotContain(gyldig)
-        assertThat(AiNokkelForesporsel(gyldig).toString()).doesNotContain(gyldig)
+        assertThat(AiNokkelForesporsel("anthropic", gyldig).toString()).doesNotContain(gyldig)
     }
 }
