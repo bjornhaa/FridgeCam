@@ -63,4 +63,21 @@ class VisionProviderFabrikkTest {
 
         assertThat(props.toString()).doesNotContain("hemmelig")
     }
+
+    @Test
+    fun `modell fra en annen leverandør stopper oppstart med tydelig melding`() {
+        assertThatThrownBy { fabrikk(AiProperties(provider = AiLeverandor.GEMINI, model = "claude-haiku-5-5")) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("AI_MODEL=claude-haiku-5-5 passer ikke med AI_PROVIDER=gemini")
+        assertThatThrownBy { fabrikk(AiProperties(provider = AiLeverandor.ANTHROPIC, model = "gemini-4-hydrogen")) }
+            .hasMessageContaining("Anthropic-modeller begynner med «claude-»")
+    }
+
+    @Test
+    fun `modell som passer leverandøren godtas, og fake ser bort fra modellen`() {
+        fabrikk(AiProperties(provider = AiLeverandor.ANTHROPIC, model = " claude-haiku-5-5 ")).lag(AiNokkel("sk-ant-test")).use {
+            assertThat(it.navn).isEqualTo("anthropic/claude-haiku-5-5 (effort medium)")
+        }
+        fabrikk(AiProperties(provider = AiLeverandor.FAKE, model = "claude-haiku-5-5"))
+    }
 }

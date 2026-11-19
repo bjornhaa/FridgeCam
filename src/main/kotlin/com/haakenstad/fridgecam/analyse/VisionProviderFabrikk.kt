@@ -65,10 +65,27 @@ class VisionProviderFabrikk(private val props: AiProperties, private val mapper:
      */
     val nokkelLeverandor = if (leverandor == AiLeverandor.FAKE) AiLeverandor.ANTHROPIC else leverandor
 
-    private val modell: String = props.model?.takeIf { it.isNotBlank() } ?: when (leverandor) {
+    private val modell: String = props.model?.trim()?.takeIf { it.isNotEmpty() }?.also(::sjekkModell) ?: when (leverandor) {
         AiLeverandor.ANTHROPIC -> AnthropicVisionProvider.STANDARD_MODELL
         AiLeverandor.GEMINI -> GeminiVisionProvider.STANDARD_MODELL
         AiLeverandor.FAKE -> "fake"
+    }
+
+    /**
+     * Stopper oppstart når `AI_MODEL` hører til en annen leverandør enn
+     * `AI_PROVIDER` (f.eks. en Claude-modell sendt til Gemini), i stedet for at
+     * hver skanning feiler. Fake bryr seg ikke om modellen.
+     */
+    private fun sjekkModell(modell: String) {
+        val (prefiks, navn) = when (leverandor) {
+            AiLeverandor.ANTHROPIC -> "claude-" to "Anthropic"
+            AiLeverandor.GEMINI -> "gemini-" to "Gemini"
+            AiLeverandor.FAKE -> return
+        }
+        check(modell.startsWith(prefiks)) {
+            "AI_MODEL=$modell passer ikke med AI_PROVIDER=${leverandor.name.lowercase()}: " +
+                "$navn-modeller begynner med «$prefiks». Rett AI_MODEL, eller fjern den for å bruke standardmodellen."
+        }
     }
 
     init {
