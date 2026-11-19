@@ -78,12 +78,11 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
   - Hver husstand betaler for egne AI-kall, så åpen registrering koster ikke appeieren AI-kreditt
   - Ingen felles nøkkel fra miljøet i prod; uten nøkkel ber appen husstanden legge inn en
   - Alle medlemmer i husstanden deler nøkkelen
-- [ ] Grense for lagrede bilder per husstand (åpen registrering skal ikke kunne fylle Postgres-volumet) (#43)
+- [x] Bare siste bilde lagres per husstand, så åpen registrering ikke kan fylle Postgres-volumet (#43)
 - [ ] Dockerfile + `fly.toml`, Fly Postgres, deploy til Fly.io (HTTPS inkludert) (#44)
   - Maskinen kan gå i dvale (`auto_stop_machines`, `min_machines_running = 0`); kaldstart på noen sekunder er greit
   - Kostnadsvurdering: appmaskin i dvale + Postgres-maskin og volum (bildene ligger i Postgres)
 - [ ] Deploy fra GitHub Actions ved push til `main` (#45)
-- [ ] Backup av Postgres (som i talik-ai, med sjekk av at backupen er fersk og kan gjenopprettes) (#46)
 - [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
 
 ## Fase 4 – Flere kjøleskap
@@ -124,6 +123,7 @@ Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger
 - Høyere bildeoppløsning hvis etiketter på små pakker skal leses (måles med `SammenligningTest`)
 - Flytte bilder til objektlagring (Tigris) hvis Postgres-volumet blir for lite
 - Utløpsdatoer og varsler
+- Backup av Postgres med ferskhetskontroll og varsling, som i talik-ai (#46, lagt bort 2026-11-19: ikke nødvendig nå)
 - Oppskriftsforslag basert på beholdning
 - Bruke kjøpshistorikk fra Oda i prompten, så AI-en gjenkjenner merkene husstanden faktisk kjøper
 
@@ -134,7 +134,7 @@ Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger
 - **Stack:** Samme som talik-ai (Spring Boot + Spring JDBC + Flyway + JWT, Vite/React)
 - **Brukere:** Husstand med flere brukere; datamodellen støtter det fra start, invitasjon kommer i fase 6
 - **Innlogging:** JWT som `Authorization: Bearer …`, som i talik-ai. Registrering er åpen; i stedet for registreringskode legger hver husstand inn egen API-nøkkel før appen legges ut (fase 3)
-- **Bilder:** Lagres i samme størrelse som sendes til AI-en (maks 1500 px, ~170 kB), i Postgres. Boksene passer da til bildet
+- **Bilder:** Lagres i samme størrelse som sendes til AI-en (maks 1500 px, ~170 kB), i Postgres. Boksene passer da til bildet. Bare siste bilde beholdes (ingen historikk), bestemt 2026-11-19
 - **Beholdning:** En ny skanning erstatter hele beholdningen i kjøleskapet som ble skannet (bildet er et øyeblikksbilde)
 - **Kjøleskap:** En husstand kan ha flere kjøleskap (hjem og hytter); skanning, beholdning, faste varer og handleliste hører til et kjøleskap (fase 4)
 - **Drift:** Fly.io med maskin som kan gå i dvale
