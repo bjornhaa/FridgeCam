@@ -83,7 +83,6 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
   - Maskinen kan gå i dvale (`auto_stop_machines`, `min_machines_running = 0`); kaldstart på noen sekunder er greit
   - Kostnadsvurdering: appmaskin i dvale + Postgres-maskin og volum (bildene ligger i Postgres)
 - [ ] Deploy fra GitHub Actions ved push til `main` (#45)
-- [ ] Backup av Postgres (som i talik-ai, med sjekk av at backupen er fersk og kan gjenopprettes) (#46)
 - [ ] `manifest.webmanifest`, ikoner, service worker (installerbar på hjemskjermen) (#47)
 
 ## Fase 4 – Flere kjøleskap
@@ -124,6 +123,7 @@ Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger
 - Høyere bildeoppløsning hvis etiketter på små pakker skal leses (måles med `SammenligningTest`)
 - Flytte bilder til objektlagring (Tigris) hvis Postgres-volumet blir for lite
 - Utløpsdatoer og varsler
+- Backup av Postgres med ferskhetskontroll og varsling, som i talik-ai (#46, lagt bort 2026-11-19: ikke nødvendig nå)
 - Oppskriftsforslag basert på beholdning
 - Bruke kjøpshistorikk fra Oda i prompten, så AI-en gjenkjenner merkene husstanden faktisk kjøper
 
