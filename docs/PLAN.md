@@ -90,11 +90,11 @@ mobiltesting slipper midlertidige tunneler. Rekkefølgen under er den issuene ta
 En husstand kan ha flere kjøleskap, f.eks. hjemme, på fjellhytta og på hytta på Sørlandet.
 Man husker sjelden hva som står igjen i hvert av dem; appen skal vise det hjemmefra.
 Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger annet enn hjemme).
-- [ ] `kjoleskap` som egen tabell under husstanden (navn); skanning og beholdning hører til et kjøleskap (#61)
+- [x] `kjoleskap` som egen tabell under husstanden (navn); skanning og beholdning hører til et kjøleskap (#61)
   - Eksisterende skanninger og beholdning flyttes til ett standard kjøleskap per husstand, i samme migrering
   - Siste bilde beholdes per kjøleskap, ikke per husstand
   - En ny skanning erstatter beholdningen i det valgte kjøleskapet, ikke i de andre
-- [ ] Legge til, gi nytt navn og slette kjøleskap (Profil) (#62)
+- [x] Legge til, gi nytt navn og slette kjøleskap (Profil) (#62)
 - [ ] Velge kjøleskap når man skanner (det sist brukte er forhåndsvalgt) (#63)
 - [ ] «Kjøleskapet»-fanen viser ett kjøleskap om gangen, med enkel veksling og «sist skannet» for hvert (#64)
 

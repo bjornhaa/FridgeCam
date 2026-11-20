@@ -112,6 +112,10 @@ cd frontend && npm test                    # Vitest
   «Hjemme». `GET /api/kjoleskap`; `/api/analyze` tar skjemafeltet `kjoleskapId` og `GET /api/beholdning`
   `?kjoleskap=`, begge med husstandens eldste kjøleskap som standard. `HusstandTilgang.kjoleskapFor` sjekker
   tilgang (404). En ny skanning erstatter bare beholdningen i sitt kjøleskap.
+- Kjøleskap administreres under Profil (#62, `KjoleskapService`): `POST /api/kjoleskap`, `PUT`/`DELETE
+  /api/kjoleskap/{id}`; endringer svarer med hele listen. Navn unikt i husstanden uansett store/små bokstaver
+  (`kjoleskap_finnes`), høyst 20 (`for_mange_kjoleskap`), det siste kan ikke slettes (`siste_kjoleskap`;
+  husstandsraden låses så to samtidige slettinger ikke tar begge). Sletting tar med skanninger, bilde og varer.
 - Bare siste bilde lagres (#43), per kjøleskap: ved ny skanning og ved lagring som beholdning slettes
   kjøleskapets bilder unntatt den nyeste skanningens og beholdningens (som regel samme). Ingen bildehistorikk; selve
   skanningene (AI-svar, rettet liste, kostnad) beholdes. Kjøleskapet viser bare listen uten bilde.
