@@ -38,9 +38,11 @@ const MELDINGER: Record<string, string> = {
   ai_mangler_kreditt: 'Det er tomt for kreditt på AI-kontoen. Fyll på hos leverandøren.',
 }
 
-export async function analyserBilde(bilde: File, signal?: AbortSignal): Promise<AnalyseSvar> {
+export async function analyserBilde(bilde: File, kjoleskapId?: number, signal?: AbortSignal): Promise<AnalyseSvar> {
   const skjema = new FormData()
   skjema.append('bilde', bilde)
+  // Uten kjøleskap går skanningen til husstandens standard (#61).
+  if (kjoleskapId !== undefined) skjema.append('kjoleskapId', String(kjoleskapId))
   return normaliser(await apiKall('/api/analyze', { method: 'POST', body: skjema, signal }, MELDINGER))
 }
 

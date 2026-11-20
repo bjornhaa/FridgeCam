@@ -4,10 +4,13 @@ import { hentBeholdning, hentSkanningsbilde, type Beholdning } from '../api/kjol
 import { BildeMedBokser } from '../bilde/BildeMedBokser.tsx'
 import { ApiFeil } from '../api/klient.ts'
 import { Side } from '../navigasjon/Side.tsx'
+import { useKjoleskap } from '../kjoleskap/useKjoleskap.ts'
+import { KjoleskapVelger } from '../kjoleskap/KjoleskapVelger.tsx'
 
 /**
  * Det som er i kjøleskapet nå (#32, #33): bildet fra siste lagrede skanning og
- * listen. Trykk på varer for å markere dem i bildet; de blir liggende til man
+ * listen. Med flere kjøleskap vises ett om gangen, sist brukte først (#64).
+ * Trykk på varer for å markere dem i bildet; de blir liggende til man
  * trykker på dem igjen, så flere kan vises samtidig.
  */
 export function KjoleskapSide() {
@@ -16,16 +19,23 @@ export function KjoleskapSide() {
   const [bildeUrl, setBildeUrl] = useState<string | null>(null)
   const [valgte, setValgte] = useState<ReadonlySet<number>>(new Set())
   const skanningId = beholdning?.skanning?.id
+  const kjoleskap = useKjoleskap()
+  const kjoleskapId = kjoleskap.valgt?.id
 
   useEffect(() => {
+    if (kjoleskapId === undefined) return
     let avbrutt = false
-    hentBeholdning()
+    setBeholdning(null)
+    setBildeUrl(null)
+    setValgte(new Set())
+    setFeil(null)
+    hentBeholdning(kjoleskapId)
       .then((b) => !avbrutt && setBeholdning(b))
       .catch((err) => !avbrutt && setFeil(err instanceof ApiFeil ? err.message : 'Noe gikk galt. Prøv igjen.'))
     return () => {
       avbrutt = true
     }
-  }, [])
+  }, [kjoleskapId])
 
   // Bildet hentes med token (et vanlig <img src> kan ikke sende det) og vises
   // fra en midlertidig URL som frigjøres igjen. Uten bilde vises bare listen.
@@ -59,15 +69,22 @@ export function KjoleskapSide() {
 
   return (
     <Side>
-      <h1 className="text-2xl font-semibold tracking-tight">Kjøleskapet</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {kjoleskap.valgt && (kjoleskap.liste?.length ?? 0) > 1 ? kjoleskap.valgt.navn : 'Kjøleskapet'}
+      </h1>
       {beholdning?.skanning && (
         <p className="text-ink-soft dark:text-slate-400">Skannet {formaterTidspunkt(beholdning.skanning.tidspunkt)}</p>
       )}
+      {kjoleskap.liste && kjoleskap.valgt && (
+        <div className="mt-4">
+          <KjoleskapVelger liste={kjoleskap.liste} valgt={kjoleskap.valgt} onVelg={kjoleskap.velg} visSistSkannet />
+        </div>
+      )}
 
       <div className="mt-6 flex flex-1 flex-col">
-        {feil ? (
+        {feil || kjoleskap.feil ? (
           <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-red-800 dark:bg-red-950 dark:text-red-200">
-            {feil}
+            {feil ?? kjoleskap.feil}
           </p>
         ) : !beholdning ? (
           <div className="flex flex-1 items-center justify-center">
