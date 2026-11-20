@@ -39,6 +39,19 @@ class KjoleskapRepository(private val jdbc: NamedParameterJdbcTemplate) {
             Long::class.java,
         )!!
 
+    fun settNavn(id: Long, navn: String) {
+        jdbc.update("UPDATE kjoleskap SET navn = :navn WHERE id = :id", mapOf("id" to id, "navn" to navn))
+    }
+
+    fun slett(id: Long) {
+        jdbc.update("DELETE FROM kjoleskap WHERE id = :id", mapOf("id" to id))
+    }
+
+    /** Låser husstandsraden ut transaksjonen, så telling og endring av kjøleskap ikke går i beina på hverandre. */
+    fun lasHusstand(husstandId: Long) {
+        jdbc.query("SELECT id FROM husstand WHERE id = :h FOR UPDATE", mapOf("h" to husstandId)) { _, _ -> }
+    }
+
     /** Husstandens kjøleskap, eldste først; det første er standard når ingen er valgt. */
     fun forHusstand(husstandId: Long): List<Kjoleskap> =
         jdbc.query("$utvalg WHERE k.husstand_id = :h ORDER BY k.opprettet, k.id", mapOf("h" to husstandId), rad)
