@@ -8,6 +8,8 @@ WITH bruker AS (
 ), husstand AS (
     INSERT INTO husstand (navn) VALUES ('Hjemme')
     RETURNING id
+), kjoleskap AS (
+    INSERT INTO kjoleskap (husstand_id, navn) SELECT id, 'Hjemme' FROM husstand
 )
 INSERT INTO husstand_medlem (husstand_id, bruker_id, rolle)
 SELECT husstand.id, bruker.id, 'EIER' FROM husstand, bruker;

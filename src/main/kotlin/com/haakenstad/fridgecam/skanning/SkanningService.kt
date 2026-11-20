@@ -40,13 +40,15 @@ class SkanningService(
      * Kallet går med husstandens valgte leverandør og modell (#54) og egen nøkkel
      * (#42); uten nøkkel stopper det med `mangler_ai_nokkel` før bildet sendes noe sted.
      */
-    fun analyser(brukerId: Long, bilde: ByteArray, mimeType: String): AnalysertSkanning {
-        val husstandId = tilgang.husstandFor(brukerId)
+    fun analyser(brukerId: Long, kjoleskapId: Long?, bilde: ByteArray, mimeType: String): AnalysertSkanning {
+        // Sjekkes før AI-kallet, så et ukjent kjøleskap ikke koster noe.
+        val kjoleskap = tilgang.kjoleskapFor(brukerId, kjoleskapId)
+        val husstandId = kjoleskap.husstandId
         val valg = aiValg.valgFor(husstandId)
         val nokkel = if (fabrikk.erFake) null else aiNokler.nokkelFor(husstandId, valg.leverandor)
         val (navn, resultat) = fabrikk.lag(valg, nokkel).use { it.navn to it.analyser(bilde, mimeType) }
         val id = skanninger.opprett(
-            NySkanning(husstandId, brukerId, navn, resultat.forbruk, resultat.varer, Bilde(mimeType, bilde)),
+            NySkanning(husstandId, kjoleskap.id, brukerId, navn, resultat.forbruk, resultat.varer, Bilde(mimeType, bilde)),
         )
         return AnalysertSkanning(id, resultat.varer, resultat.forbruk, navn)
     }
@@ -59,7 +61,8 @@ class SkanningService(
     }
 
     /**
-     * Erstatter husstandens beholdning med brukerens rettede liste (#32).
+     * Erstatter beholdningen i kjøleskapet som ble skannet med brukerens rettede
+     * liste (#32, #61); de andre kjøleskapene røres ikke.
      * Boksene hentes fra AI-ens svar, ikke fra klienten.
      */
     @Transactional
@@ -74,9 +77,9 @@ class SkanningService(
             } ?: emptyList()
             NyBeholdningVare(vare.navn.trim(), vare.antall, bokser)
         }
-        beholdning.erstatt(skanning.husstandId, skanningId, nye)
+        beholdning.erstatt(skanning.husstandId, skanning.kjoleskapId, skanningId, nye)
         skanninger.markerLagret(skanningId, varer.map { it.copy(navn = it.navn.trim()) })
         // Den forrige beholdningens bilde trengs ikke lenger (#43).
-        skanninger.slettGamleBilder(skanning.husstandId)
+        skanninger.slettGamleBilder(skanning.kjoleskapId)
     }
 }

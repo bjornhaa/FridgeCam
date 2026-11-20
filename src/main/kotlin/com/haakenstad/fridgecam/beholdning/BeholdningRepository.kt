@@ -31,16 +31,17 @@ class BeholdningRepository(
 ) {
 
     /**
-     * Erstatter hele husstandens beholdning med [varer] fra skanningen.
+     * Erstatter hele kjøleskapets beholdning med [varer] fra skanningen.
      * Bildet er et øyeblikksbilde av kjøleskapet, så det som ikke er med, er borte.
      */
     @Transactional
-    fun erstatt(husstandId: Long, skanningId: Long, varer: List<NyBeholdningVare>) {
-        jdbc.update("DELETE FROM beholdning_vare WHERE husstand_id = :h", mapOf("h" to husstandId))
+    fun erstatt(husstandId: Long, kjoleskapId: Long, skanningId: Long, varer: List<NyBeholdningVare>) {
+        jdbc.update("DELETE FROM beholdning_vare WHERE kjoleskap_id = :k", mapOf("k" to kjoleskapId))
         if (varer.isEmpty()) return
         val rader: Array<SqlParameterSource> = varer.map { vare ->
             MapSqlParameterSource()
                 .addValue("h", husstandId)
+                .addValue("k", kjoleskapId)
                 .addValue("s", skanningId)
                 .addValue("navn", vare.navn)
                 .addValue("antall", vare.antall)
@@ -48,18 +49,18 @@ class BeholdningRepository(
         }.toTypedArray()
         jdbc.batchUpdate(
             """
-            INSERT INTO beholdning_vare (husstand_id, skanning_id, navn, antall, bokser)
-            VALUES (:h, :s, :navn, :antall, CAST(:bokser AS jsonb))
+            INSERT INTO beholdning_vare (husstand_id, kjoleskap_id, skanning_id, navn, antall, bokser)
+            VALUES (:h, :k, :s, :navn, :antall, CAST(:bokser AS jsonb))
             """.trimIndent(),
             rader,
         )
     }
 
-    /** Husstandens varer i samme rekkefølge som de ble lagret. */
-    fun forHusstand(husstandId: Long): List<BeholdningVare> =
+    /** Kjøleskapets varer i samme rekkefølge som de ble lagret. */
+    fun forKjoleskap(kjoleskapId: Long): List<BeholdningVare> =
         jdbc.query(
-            "SELECT * FROM beholdning_vare WHERE husstand_id = :h ORDER BY id",
-            mapOf("h" to husstandId),
+            "SELECT * FROM beholdning_vare WHERE kjoleskap_id = :k ORDER BY id",
+            mapOf("k" to kjoleskapId),
         ) { rs, _ ->
             BeholdningVare(
                 id = rs.getLong("id"),

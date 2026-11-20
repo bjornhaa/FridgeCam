@@ -5,6 +5,7 @@ import com.haakenstad.fridgecam.bruker.BrukerRepository
 import com.haakenstad.fridgecam.common.ApiException
 import com.haakenstad.fridgecam.husstand.HusstandRepository
 import com.haakenstad.fridgecam.husstand.Rolle
+import com.haakenstad.fridgecam.kjoleskap.KjoleskapRepository
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 class InnloggingService(
     private val brukere: BrukerRepository,
     private val husstander: HusstandRepository,
+    private val kjoleskap: KjoleskapRepository,
     private val passordKoder: PasswordEncoder,
     private val jwt: JwtService,
 ) {
@@ -25,7 +27,7 @@ class InnloggingService(
      */
     private val dummyHash = hash("ikke-et-ekte-passord")
 
-    /** Oppretter bruker og en husstand med brukeren som eier, i samme transaksjon. */
+    /** Oppretter bruker, en husstand med brukeren som eier og et kjøleskap, i samme transaksjon. */
     @Transactional
     fun registrer(foresporsel: RegistrerForesporsel): InnloggingSvar {
         if (foresporsel.passord.toByteArray(Charsets.UTF_8).size > MAKS_PASSORD_BYTES) {
@@ -43,6 +45,7 @@ class InnloggingService(
         }
         val husstandId = husstander.opprett("Hjemme")
         husstander.leggTilMedlem(husstandId, bruker.id, Rolle.EIER)
+        kjoleskap.opprett(husstandId, "Hjemme")
         return InnloggingSvar(jwt.lag(bruker.id), meg(bruker))
     }
 

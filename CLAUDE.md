@@ -107,8 +107,13 @@ cd frontend && npm test                    # Vitest
   skanningen (`rettede_varer`), for senere måling av AI-kvalitet. `GET /api/beholdning` gir kjøleskapet,
   `GET /api/skanninger/{id}/bilde` bildet. Frontend henter bilder med `apiBlob` (et `<img src>` kan
   ikke sende tokenet) og viser dem med `BildeMedBokser`.
-- Bare siste bilde lagres (#43): ved ny skanning og ved lagring som beholdning slettes alle husstandens
-  bilder unntatt den nyeste skanningens og beholdningens (som regel samme). Ingen bildehistorikk; selve
+- Flere kjøleskap per husstand (#61, `kjoleskap/`): skanning og beholdning har `kjoleskap_id` (sammensatt
+  fremmednøkkel med `husstand_id`, så de ikke kan peke på et kjøleskap i en annen husstand). Registrering lager
+  «Hjemme». `GET /api/kjoleskap`; `/api/analyze` tar skjemafeltet `kjoleskapId` og `GET /api/beholdning`
+  `?kjoleskap=`, begge med husstandens eldste kjøleskap som standard. `HusstandTilgang.kjoleskapFor` sjekker
+  tilgang (404). En ny skanning erstatter bare beholdningen i sitt kjøleskap.
+- Bare siste bilde lagres (#43), per kjøleskap: ved ny skanning og ved lagring som beholdning slettes
+  kjøleskapets bilder unntatt den nyeste skanningens og beholdningens (som regel samme). Ingen bildehistorikk; selve
   skanningene (AI-svar, rettet liste, kostnad) beholdes. Kjøleskapet viser bare listen uten bilde.
 - All tilgang til husstandsdata går via `HusstandTilgang`: `husstandFor(bruker)` og
   `sjekkMedlem(...)`, som gir 404 `ikke_funnet` (ikke 403) for andres data.
