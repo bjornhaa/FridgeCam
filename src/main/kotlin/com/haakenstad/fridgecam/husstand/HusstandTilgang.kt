@@ -1,6 +1,8 @@
 package com.haakenstad.fridgecam.husstand
 
 import com.haakenstad.fridgecam.common.ApiException
+import com.haakenstad.fridgecam.kjoleskap.Kjoleskap
+import com.haakenstad.fridgecam.kjoleskap.KjoleskapRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 
@@ -9,7 +11,10 @@ import org.springframework.stereotype.Component
  * annen husstands data. Alle API-er som leser eller skriver husstandsdata går hit.
  */
 @Component
-class HusstandTilgang(private val husstander: HusstandRepository) {
+class HusstandTilgang(
+    private val husstander: HusstandRepository,
+    private val kjoleskap: KjoleskapRepository,
+) {
 
     /**
      * Husstanden brukerens skanninger og beholdning hører til. Inntil man kan
@@ -27,6 +32,19 @@ class HusstandTilgang(private val husstander: HusstandRepository) {
         if (husstander.forBruker(brukerId).none { it.husstandId == husstandId }) {
             throw ikkeFunnet()
         }
+    }
+
+    /**
+     * Kjøleskapet brukeren handler på (#61). Uten [kjoleskapId] brukes husstandens
+     * eldste (standard). Et kjøleskap i en annen husstand gir 404, som [sjekkMedlem].
+     */
+    fun kjoleskapFor(brukerId: Long, kjoleskapId: Long?): Kjoleskap {
+        if (kjoleskapId == null) {
+            return kjoleskap.forHusstand(husstandFor(brukerId)).firstOrNull() ?: throw ikkeFunnet()
+        }
+        val funnet = kjoleskap.finn(kjoleskapId) ?: throw ikkeFunnet()
+        sjekkMedlem(brukerId, funnet.husstandId)
+        return funnet
     }
 
     companion object {

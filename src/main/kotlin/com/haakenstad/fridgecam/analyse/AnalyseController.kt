@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
@@ -30,12 +31,14 @@ class AnalyseController(private val skanninger: SkanningService) {
     /**
      * Tar imot et bilde av kjøleskapet (multipart-felt `bilde`) og returnerer
      * varene AI-en fant (#7). Bildet er allerede krympet i nettleseren, så
-     * det er typisk noen hundre kB.
+     * det er typisk noen hundre kB. `kjoleskapId` (skjemafelt) velger kjøleskapet;
+     * uten går skanningen til husstandens standard kjøleskap.
      */
     @PostMapping("/analyze", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     fun analyser(
         @AuthenticationPrincipal bruker: InnloggetBruker,
         @RequestPart("bilde") bilde: MultipartFile,
+        @RequestParam("kjoleskapId", required = false) kjoleskapId: Long?,
     ): AnalyseSvar {
         if (bilde.isEmpty) {
             throw ApiException(HttpStatus.BAD_REQUEST, "bilde_mangler", "Bildet er tomt.")
@@ -49,7 +52,7 @@ class AnalyseController(private val skanninger: SkanningService) {
             )
 
         val start = System.nanoTime()
-        val resultat = skanninger.analyser(bruker.brukerId, data, mimeType)
+        val resultat = skanninger.analyser(bruker.brukerId, kjoleskapId, data, mimeType)
         log.info(
             "Analyse: {} kB {}, {} varer fra {} på {} ms{}",
             data.size / 1024, mimeType, resultat.varer.size, resultat.leverandor,

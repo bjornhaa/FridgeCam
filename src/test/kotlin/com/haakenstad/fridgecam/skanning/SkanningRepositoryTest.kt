@@ -20,7 +20,7 @@ class SkanningRepositoryTest : DatabaseTest() {
     private val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 1, 2, 3)
 
     private fun ny(eier: Eier, forbruk: Tokenforbruk? = Tokenforbruk("claude-opus-5-5", 1800, 950, 0.0332)) =
-        NySkanning(eier.husstandId, eier.brukerId, "anthropic/claude-opus-5-5", forbruk, varer, Bilde("image/jpeg", jpeg))
+        NySkanning(eier.husstandId, eier.kjoleskapId, eier.brukerId, "anthropic/claude-opus-5-5", forbruk, varer, Bilde("image/jpeg", jpeg))
 
     @Test
     fun `skanning lagres og leses tilbake med AI-svar og forbruk`() {
@@ -30,6 +30,7 @@ class SkanningRepositoryTest : DatabaseTest() {
         val skanning = skanninger.finn(id)!!
 
         assertThat(skanning.husstandId).isEqualTo(eier.husstandId)
+        assertThat(skanning.kjoleskapId).isEqualTo(eier.kjoleskapId)
         assertThat(skanning.brukerId).isEqualTo(eier.brukerId)
         assertThat(skanning.leverandor).isEqualTo("anthropic/claude-opus-5-5")
         assertThat(skanning.forbruk).isEqualTo(Tokenforbruk("claude-opus-5-5", 1800, 950, 0.0332))
@@ -77,6 +78,27 @@ class SkanningRepositoryTest : DatabaseTest() {
 
         assertThat(skanninger.siste(eier.husstandId)!!.id).isEqualTo(nyeste)
         assertThat(skanninger.siste(nyEier().husstandId)).isNull()
+    }
+
+    @Test
+    fun `skanningen kan ikke peke på et kjøleskap i en annen husstand`() {
+        val eier = nyEier()
+        val annen = nyEier()
+
+        org.assertj.core.api.Assertions.assertThatThrownBy {
+            skanninger.opprett(ny(eier).copy(kjoleskapId = annen.kjoleskapId))
+        }.isInstanceOf(org.springframework.dao.DataIntegrityViolationException::class.java)
+    }
+
+    @Test
+    fun `sletting av kjøleskap fjerner skanningene og bildene`() {
+        val eier = nyEier()
+        val id = skanninger.opprett(ny(eier))
+
+        jdbc.update("DELETE FROM kjoleskap WHERE id = :id", mapOf("id" to eier.kjoleskapId))
+
+        assertThat(skanninger.finn(id)).isNull()
+        assertThat(skanninger.hentBilde(id)).isNull()
     }
 
     @Test

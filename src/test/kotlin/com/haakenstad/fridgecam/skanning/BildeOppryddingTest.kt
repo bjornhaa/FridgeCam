@@ -18,8 +18,8 @@ class BildeOppryddingTest : DatabaseTest() {
 
     private val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 1, 2, 3)
 
-    private fun skann(eier: Eier): Long = skanninger.opprett(
-        NySkanning(eier.husstandId, eier.brukerId, "fake", null, listOf(FunnetVare("melk", 1, Sikkerhet.HOY)), Bilde("image/jpeg", jpeg)),
+    private fun skann(eier: Eier, kjoleskapId: Long = eier.kjoleskapId): Long = skanninger.opprett(
+        NySkanning(eier.husstandId, kjoleskapId, eier.brukerId, "fake", null, listOf(FunnetVare("melk", 1, Sikkerhet.HOY)), Bilde("image/jpeg", jpeg)),
     )
 
     private fun lagre(eier: Eier, skanningId: Long) =
@@ -63,6 +63,20 @@ class BildeOppryddingTest : DatabaseTest() {
         assertThat(harBilde(iKjoleskapet)).isTrue()
         assertThat(harBilde(forlatt)).isFalse()
         assertThat(harBilde(nyeste)).isTrue()
+    }
+
+    @Test
+    fun `bildet i et annet kjøleskap i husstanden røres ikke`() {
+        val eier = nyEier()
+        val hytta = kjoleskapRepo.opprett(eier.husstandId, "Hytta")
+        val paHytta = skann(eier, hytta)
+        lagre(eier, paHytta)
+
+        val hjemme = (1..3).map { skann(eier) }
+        lagre(eier, hjemme.last())
+
+        assertThat(harBilde(paHytta)).isTrue()
+        assertThat(hjemme.map(::harBilde)).containsExactly(false, false, true)
     }
 
     @Test

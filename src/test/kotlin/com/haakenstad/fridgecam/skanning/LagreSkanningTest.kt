@@ -21,10 +21,11 @@ class LagreSkanningTest : AppTest() {
     private val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(), 0, 0x10)
 
     /** Skanner med fake-AI-en og returnerer skanning-id-en. */
-    private fun skann(token: String): Long {
+    private fun skann(token: String, kjoleskapId: Long? = null): Long {
         val svar = mvc.multipart("/api/analyze") {
             header("Authorization", "Bearer $token")
             file(MockMultipartFile("bilde", "k.jpg", "image/jpeg", jpeg))
+            kjoleskapId?.let { param("kjoleskapId", it.toString()) }
         }.andReturn().response.contentAsString
         return Regex("\"skanningId\":(\\d+)").find(svar)!!.groupValues[1].toLong()
     }
@@ -36,8 +37,26 @@ class LagreSkanningTest : AppTest() {
             content = """{"varer":$varer}"""
         }
 
-    private fun beholdning(token: String): ResultActionsDsl =
-        mvc.get("/api/beholdning") { header("Authorization", "Bearer $token") }
+    private fun beholdning(token: String, kjoleskapId: Long? = null): ResultActionsDsl =
+        mvc.get("/api/beholdning") {
+            header("Authorization", "Bearer $token")
+            kjoleskapId?.let { param("kjoleskap", it.toString()) }
+        }
+
+    /** Id-en til brukerens standard kjøleskap (det registreringen laget). */
+    private fun standardKjoleskap(token: String): Long {
+        val svar = mvc.get("/api/kjoleskap") { header("Authorization", "Bearer $token") }
+            .andReturn().response.contentAsString
+        return Regex("\"id\":(\\d+)").find(svar)!!.groupValues[1].toLong()
+    }
+
+    /** Et ekstra kjøleskap i brukerens husstand (API for å lage dem kommer i #62). */
+    private fun nyttKjoleskap(token: String, navn: String): Long =
+        jdbc.queryForObject(
+            "INSERT INTO kjoleskap (husstand_id, navn) SELECT husstand_id, :navn FROM kjoleskap WHERE id = :k RETURNING id",
+            mapOf("k" to standardKjoleskap(token), "navn" to navn),
+            Long::class.java,
+        )!!
 
     @Test
     fun `rettet liste blir beholdningen, med bokser bare for AI-ens varer`() {
@@ -89,6 +108,60 @@ class LagreSkanningTest : AppTest() {
             jsonPath("$.varer[0].navn") { value("juice") }
             jsonPath("$.skanning.id") { value(ny) }
         }
+    }
+
+    @Test
+    fun `registrering lager kjøleskapet «Hjemme», som er standard`() {
+        val token = registrer()
+
+        mvc.get("/api/kjoleskap") { header("Authorization", "Bearer $token") }.andExpect {
+            status { isOk() }
+            jsonPath("$.length()") { value(1) }
+            jsonPath("$[0].navn") { value("Hjemme") }
+            jsonPath("$[0].sistSkannet") { value(null) }
+        }
+        beholdning(token).andExpect { jsonPath("$.kjoleskap.navn") { value("Hjemme") } }
+    }
+
+    @Test
+    fun `skanning i ett kjøleskap erstatter bare det kjøleskapets beholdning`() {
+        val token = registrer()
+        val hjemme = standardKjoleskap(token)
+        val hytta = nyttKjoleskap(token, "Hytta")
+        lagre(token, skann(token), """[{"navn":"melk","antall":1}]""")
+
+        val paHytta = skann(token, hytta)
+        lagre(token, paHytta, """[{"navn":"øl","antall":6}]""")
+
+        beholdning(token, hytta).andExpect {
+            jsonPath("$.kjoleskap.navn") { value("Hytta") }
+            jsonPath("$.varer[0].navn") { value("øl") }
+            jsonPath("$.skanning.id") { value(paHytta) }
+        }
+        beholdning(token, hjemme).andExpect { jsonPath("$.varer[0].navn") { value("melk") } }
+        beholdning(token).andExpect { jsonPath("$.varer[0].navn") { value("melk") } }
+        mvc.get("/api/kjoleskap") { header("Authorization", "Bearer $token") }.andExpect {
+            jsonPath("$[0].navn") { value("Hjemme") }
+            jsonPath("$[1].navn") { value("Hytta") }
+            jsonPath("$[1].sistSkannet") { exists() }
+        }
+    }
+
+    @Test
+    fun `andres kjøleskap gir 404, også før AI-kallet`() {
+        val fremmedKjoleskap = standardKjoleskap(registrer())
+        val token = registrer()
+
+        mvc.multipart("/api/analyze") {
+            header("Authorization", "Bearer $token")
+            file(MockMultipartFile("bilde", "k.jpg", "image/jpeg", jpeg))
+            param("kjoleskapId", fremmedKjoleskap.toString())
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.code") { value("ikke_funnet") }
+        }
+        beholdning(token, fremmedKjoleskap).andExpect { status { isNotFound() } }
+        beholdning(token, 999_999_999).andExpect { status { isNotFound() } }
     }
 
     @Test
@@ -178,5 +251,6 @@ class LagreSkanningTest : AppTest() {
             content = """{"varer":[]}"""
         }.andExpect { status { isUnauthorized() } }
         mvc.get("/api/beholdning").andExpect { status { isUnauthorized() } }
+        mvc.get("/api/kjoleskap").andExpect { status { isUnauthorized() } }
     }
 }
