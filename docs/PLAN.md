@@ -95,8 +95,8 @@ Tatt før handlelisten, så den bygges per kjøleskap fra starten (hytta trenger
   - Siste bilde beholdes per kjøleskap, ikke per husstand
   - En ny skanning erstatter beholdningen i det valgte kjøleskapet, ikke i de andre
 - [x] Legge til, gi nytt navn og slette kjøleskap (Profil) (#62)
-- [ ] Velge kjøleskap når man skanner (det sist brukte er forhåndsvalgt) (#63)
-- [ ] «Kjøleskapet»-fanen viser ett kjøleskap om gangen, med enkel veksling og «sist skannet» for hvert (#64)
+- [x] Velge kjøleskap når man skanner (det sist brukte er forhåndsvalgt) (#63)
+- [x] «Kjøleskapet»-fanen viser ett kjøleskap om gangen, med enkel veksling og «sist skannet» for hvert (#64)
 
 ## Fase 5 – Handleliste
 - [ ] Undersøke Odas offisielle MCP-server (`https://oda.com/mcp`): vilkår for bruk fra en tredjepartsapp,

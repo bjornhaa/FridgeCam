@@ -25,6 +25,16 @@ describe('analyserBilde', () => {
     const [url, init] = vi.mocked(fetch).mock.calls[0]
     expect(url).toBe('/api/analyze')
     expect((init?.body as FormData).get('bilde')).toBeInstanceOf(File)
+    expect((init?.body as FormData).has('kjoleskapId')).toBe(false)
+  })
+
+  it('sender valgt kjøleskap som skjemafeltet «kjoleskapId»', async () => {
+    svar(200, { skanningId: 7, varer: [], leverandor: 'fake' })
+
+    await analyserBilde(bilde, 3)
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    expect((init?.body as FormData).get('kjoleskapId')).toBe('3')
   })
 
   it('gir tom liste med bokser når feltet mangler i svaret', async () => {

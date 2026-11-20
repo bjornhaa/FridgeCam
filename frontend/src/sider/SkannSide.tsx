@@ -9,6 +9,8 @@ import { VareListe } from '../vareliste/VareListe.tsx'
 import { fraAnalyse, type RedigerbarVare } from '../vareliste/redigering.ts'
 import { BildeMedBokser } from '../bilde/BildeMedBokser.tsx'
 import { Side } from '../navigasjon/Side.tsx'
+import { useKjoleskap } from '../kjoleskap/useKjoleskap.ts'
+import { KjoleskapVelger } from '../kjoleskap/KjoleskapVelger.tsx'
 
 /**
  * Kameraflyten: ta bilde, krymp det (#6), se forhåndsvisning, ta nytt.
@@ -40,6 +42,9 @@ export function SkannSide() {
   const valgtVare = varer.find((v) => v.id === valgtId) ?? null
   const kameraInput = useRef<HTMLInputElement>(null)
   const galleriInput = useRef<HTMLInputElement>(null)
+  // Kjøleskapet bildet tas for (#63); sist brukte er forhåndsvalgt.
+  const kjoleskap = useKjoleskap()
+  const flere = (kjoleskap.liste?.length ?? 0) > 1
 
   // Lag en midlertidig URL for forhåndsvisning, og frigjør den når bildet
   // byttes ut. Ellers blir hvert bilde liggende i minnet.
@@ -99,7 +104,7 @@ export function SkannSide() {
     setNokkelfeil(false)
     setAnalyserer(true)
     try {
-      const svar = await analyserBilde(bilde.fil)
+      const svar = await analyserBilde(bilde.fil, kjoleskap.valgt?.id)
       setAnalyse(svar)
       setVarer(fraAnalyse(svar.varer))
     } catch (err) {
@@ -117,6 +122,17 @@ export function SkannSide() {
         <p className="text-ink-soft dark:text-slate-400">
           Ta bilde av kjøleskapet, så finner vi ut hva som er der.
         </p>
+        {kjoleskap.liste && kjoleskap.valgt && flere && (
+          <div className="mt-4">
+            <p className="mb-2 text-sm font-medium">Hvilket kjøleskap?</p>
+            <KjoleskapVelger
+              liste={kjoleskap.liste}
+              valgt={kjoleskap.valgt}
+              onVelg={kjoleskap.velg}
+              laast={analyserer || analyse !== null}
+            />
+          </div>
+        )}
       </header>
 
       <input
@@ -197,7 +213,7 @@ export function SkannSide() {
                   className="flex items-center justify-center gap-3 rounded-xl bg-accent px-5 py-4 text-lg font-medium text-white active:bg-accent-hover disabled:opacity-70"
                 >
                   {lagrer && <span className="size-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />}
-                  {lagrer ? 'Lagrer …' : 'Lagre i kjøleskapet'}
+                  {lagrer ? 'Lagrer …' : flere && kjoleskap.valgt ? `Lagre i «${kjoleskap.valgt.navn}»` : 'Lagre i kjøleskapet'}
                 </button>
               </>
             )}
