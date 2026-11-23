@@ -117,7 +117,8 @@ cd frontend && npm test                    # Vitest
   (`kjoleskap_finnes`), høyst 20 (`for_mange_kjoleskap`), det siste kan ikke slettes (`siste_kjoleskap`;
   husstandsraden låses så to samtidige slettinger ikke tar begge). Sletting tar med skanninger, bilde og varer.
 - Frontend (#63, #64): `useKjoleskap()` gir listen og valgt kjøleskap, husket per enhet i localStorage
-  (`kjoleskap/valgtKjoleskap.ts`), delt av Skann og Kjøleskapet. `KjoleskapVelger` vises bare med flere enn ett.
+  (`kjoleskap/valgtKjoleskap.ts`), delt av Skann og Kjøleskapet. Med flere enn ett vises `KjoleskapVelger` (knapper) på Skann,
+  og overskriften i Kjøleskapet er en nedtrekksliste (`KjoleskapOverskrift`).
   Valget låses etter analysen, siden skanningen allerede hører til et kjøleskap.
 - Bare siste bilde lagres (#43), per kjøleskap: ved ny skanning og ved lagring som beholdning slettes
   kjøleskapets bilder unntatt den nyeste skanningens og beholdningens (som regel samme). Ingen bildehistorikk; selve

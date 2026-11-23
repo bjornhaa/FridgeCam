@@ -5,11 +5,12 @@ import { BildeMedBokser } from '../bilde/BildeMedBokser.tsx'
 import { ApiFeil } from '../api/klient.ts'
 import { Side } from '../navigasjon/Side.tsx'
 import { useKjoleskap } from '../kjoleskap/useKjoleskap.ts'
-import { KjoleskapVelger } from '../kjoleskap/KjoleskapVelger.tsx'
+import { KjoleskapOverskrift } from '../kjoleskap/KjoleskapOverskrift.tsx'
 
 /**
  * Det som er i kjøleskapet nå (#32, #33): bildet fra siste lagrede skanning og
- * listen. Med flere kjøleskap vises ett om gangen, sist brukte først (#64).
+ * listen. Med flere kjøleskap vises ett om gangen, sist brukte først (#64),
+ * og overskriften er en nedtrekksliste for å bytte.
  * Trykk på varer for å markere dem i bildet; de blir liggende til man
  * trykker på dem igjen, så flere kan vises samtidig.
  */
@@ -69,16 +70,9 @@ export function KjoleskapSide() {
 
   return (
     <Side>
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {kjoleskap.valgt?.navn ?? 'Kjøleskapet'}
-      </h1>
+      <KjoleskapOverskrift liste={kjoleskap.liste} valgt={kjoleskap.valgt} onVelg={kjoleskap.velg} />
       {beholdning?.skanning && (
         <p className="text-ink-soft dark:text-slate-400">Skannet {formaterTidspunkt(beholdning.skanning.tidspunkt)}</p>
-      )}
-      {kjoleskap.liste && kjoleskap.valgt && (
-        <div className="mt-4">
-          <KjoleskapVelger liste={kjoleskap.liste} valgt={kjoleskap.valgt} onVelg={kjoleskap.velg} visSistSkannet />
-        </div>
       )}
 
       <div className="mt-6 flex flex-1 flex-col">

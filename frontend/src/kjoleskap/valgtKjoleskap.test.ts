@@ -31,14 +31,3 @@ describe('valgt kjøleskap', () => {
     expect(hentSistValgt()).toBeNull()
   })
 })
-
-describe('kortDato', () => {
-  it('gir i dag, i går eller kort dato', async () => {
-    const { kortDato } = await import('./KjoleskapVelger.tsx')
-    const na = new Date(2026, 10, 20, 12, 0)
-    expect(kortDato(new Date(2026, 10, 20, 8, 0).toISOString(), na)).toBe('i dag')
-    expect(kortDato(new Date(2026, 10, 19, 23, 0).toISOString(), na)).toBe('i går')
-    expect(kortDato(new Date(2026, 10, 2, 9, 0).toISOString(), na)).toMatch(/^2\. nov/)
-    expect(kortDato(new Date(2025, 6, 2, 9, 0).toISOString(), na)).toMatch(/2025/)
-  })
-})
