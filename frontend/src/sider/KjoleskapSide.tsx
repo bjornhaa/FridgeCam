@@ -70,7 +70,7 @@ export function KjoleskapSide() {
   return (
     <Side>
       <h1 className="text-2xl font-semibold tracking-tight">
-        {kjoleskap.valgt && (kjoleskap.liste?.length ?? 0) > 1 ? kjoleskap.valgt.navn : 'Kjøleskapet'}
+        {kjoleskap.valgt?.navn ?? 'Kjøleskapet'}
       </h1>
       {beholdning?.skanning && (
         <p className="text-ink-soft dark:text-slate-400">Skannet {formaterTidspunkt(beholdning.skanning.tidspunkt)}</p>
